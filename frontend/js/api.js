@@ -1,5 +1,7 @@
 // Client HTTP pour Recette & Avis — toutes les requêtes vers /api
-const API_BASE = "/api";
+const API_BASE =
+  window.RA_API_BASE ||
+  (window.location.port === "3000" ? "http://localhost:3001/api" : "/api");
 
 async function apiFetch(path, opts = {}) {
   const { method = "GET", body, headers = {} } = opts;

@@ -52,8 +52,8 @@ Projet académique EFREI — module **TI616 Numérique Durable** (Groupe 3).
 
 ### Back-end Node.js / Express
 - API REST complète (recettes, utilisateurs, commentaires, notes, follows)
-- Authentification par sessions (express-session + connect-sqlite3)
-- Hash des mots de passe avec bcrypt
+- Authentification par sessions (express-session + session-file-store)
+- Hash des mots de passe avec bcryptjs
 - Validation des entrées côté serveur (express-validator)
 
 ### Base de données SQLite
@@ -72,22 +72,22 @@ Projet académique EFREI — module **TI616 Numérique Durable** (Groupe 3).
 |---|---|---|
 | Front-end (prototype) | React 18 via CDN + Babel Standalone | Phase de prototype uniquement — sera remplacé par du JS natif pour la mesure finale |
 | Styles | CSS vanilla avec variables custom | Aucune dépendance externe, design system léger et réutilisable |
-| Persistance (proto) | `localStorage` (`ra_state_v1`) | Zéro requête réseau en phase prototype |
-| Back-end (à venir) | Node.js + Express | Runtime léger, faible consommation mémoire |
-| Base de données (à venir) | SQLite via `better-sqlite3` | Fichier unique, pas de serveur BDD séparé, I/O minimaux |
-| Tests (à venir) | Jest + Supertest | Dépendances de dev uniquement, non incluses en prod |
+| Persistance | API Express + SQLite | Données persistées côté serveur, sans service BDD externe |
+| Back-end | Node.js + Express | Runtime léger, faible consommation mémoire |
+| Base de données | SQLite via `node:sqlite` | Fichier unique, pas de serveur BDD séparé, I/O minimaux |
+| Tests | Jest + Supertest | Dépendances de dev uniquement, non incluses en prod |
 
-> Note: sur Windows, l'installation de modules natifs comme `bcrypt` ou `better-sqlite3` peut nécessiter le Windows SDK / Visual Studio C++ (workload "Desktop development with C++"). Voir instructions ci-dessous.
+> Note: le backend utilise `node:sqlite`, lance donc les scripts Node avec `--experimental-sqlite` comme dans `package.json`.
 
 #### Paquets de production
 
 | Paquet | Rôle |
 |---|---|
 | `express` | Serveur HTTP / routeur |
-| `better-sqlite3` | Pilote SQLite synchrone (simple, performant) |
-| `bcrypt` | Hash des mots de passe |
+| `node:sqlite` | Pilote SQLite synchrone intégré à Node.js |
+| `bcryptjs` | Hash des mots de passe |
 | `express-session` | Gestion des sessions utilisateur |
-| `connect-sqlite3` | Stockage des sessions dans SQLite |
+| `session-file-store` | Stockage persistant des sessions en fichiers JSON |
 | `express-validator` | Validation et sanitisation des entrées |
 | `cors` | En-têtes CORS pour le dev front/back séparés |
 | `dotenv` | Variables d'environnement (`.env`) |
@@ -102,7 +102,36 @@ Projet académique EFREI — module **TI616 Numérique Durable** (Groupe 3).
 
 ---
 
-## Lancer le site en local (front-end)
+## Lancer le site en local
+
+Le backend sert aussi le dossier `frontend/`. Pour tester l'application complète, lancer donc l'API puis ouvrir le site depuis le port `3001`.
+
+```bash
+# Installer les dépendances
+npm install
+
+# Initialiser la base de données
+npm run db:init
+
+# Démarrer le serveur API + front statique
+npm run start
+```
+
+Ouvrir [http://localhost:3001](http://localhost:3001) dans le navigateur.
+
+La route de santé est disponible sur [http://localhost:3001/api/health](http://localhost:3001/api/health) :
+
+```json
+{"status":"ok","env":"development"}
+```
+
+### Développement backend
+
+```bash
+npm run dev
+```
+
+### Front-end seul
 
 Le front-end est une SPA statique. Il suffit de servir le dossier `frontend/` avec n'importe quel serveur HTTP local.
 
@@ -118,6 +147,8 @@ serve frontend
 
 Ouvrir [http://localhost:3000](http://localhost:3000) dans le navigateur.
 
+Quand le front tourne sur `localhost:3000`, `frontend/js/api.js` envoie automatiquement les appels API vers `http://localhost:3001/api`.
+
 > **Pourquoi pas `file://` ?** Les scripts `type="text/babel"` chargés via `src=` sont bloqués par la politique CORS des navigateurs quand le protocole est `file://`. Il faut obligatoirement un serveur HTTP, même local.
 
 ### Comptes de démonstration
@@ -126,33 +157,6 @@ Ouvrir [http://localhost:3000](http://localhost:3000) dans le navigateur.
 |---|---|---|
 | `admin@recetteavis.fr` | Administrateur | n'importe lequel |
 | `camille@example.com` | Utilisateur | n'importe lequel |
-
----
-
-## Lancer le backend en local
-
-```bash
-# Installer les dépendances
-npm install
-
-# Initialisation de la db
-npm run db:init
-
-# Démarrer le serveur
-npm run start
-```
-
-Ouvrir [http://localhost:3000/api/health](http://localhost:3000/api/health) dans le navigateur. Si tout est ok vous verrez :
-
-```json
-{"status":"ok","env":"development"}
-```
-
-### Développement
-
-```bash
-npm run dev
-```
 
 ---
 
@@ -166,7 +170,7 @@ recette-et-avis/
 │   ├── css/
 │   │   └── styles.css          # Design system CSS (variables, composants)
 │   └── js/
-│       ├── data.js             # Seed data + helpers localStorage
+│       ├── data.js             # Helpers de mapping API + fallback prototype
 │       ├── app.jsx             # Routeur principal + état global
 │       ├── components.jsx      # Header, Footer, Stars, Pager…
 │       ├── pages-public.jsx    # Accueil, liste recettes, détail
@@ -174,11 +178,11 @@ recette-et-avis/
 │       ├── pages-user.jsx      # Profil public, système de follow
 │       ├── pages-admin.jsx     # Dashboard admin
 │       └── pages-extra.jsx     # À propos, contact, mentions, 404
-├── backend/                    # API Express (à venir)
+├── backend/                    # API Express
 │   ├── server.js               # Point d'entrée serveur
 │   ├── db.js                   # Connexion SQLite + init schéma
 │   └── routes/                 # Routes API (users, recettes, auth…)
-├── database/                   # Scripts SQL (à venir)
+├── database/                   # Schéma SQL + seed
 │   └── init.sql                # Schéma + seed data
 ├── docs/                       # Livrables PDF (consignes, rapports UML)
 ├── .env.example                # Variables d'environnement (template)
