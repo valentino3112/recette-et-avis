@@ -1,5 +1,7 @@
 # Recette & Avis
 
+**ATTENTION: BRANCHE BACKEND**
+
 Plateforme communautaire de consultation et de partage de recettes de cuisine.
 Les utilisateurs peuvent parcourir les recettes, laisser une note (1–5 étoiles), poster des commentaires et suivre d'autres membres.
 Projet académique EFREI — module **TI616 Numérique Durable** (Groupe 3).
@@ -48,10 +50,6 @@ Projet académique EFREI — module **TI616 Numérique Durable** (Groupe 3).
 - Routing SPA côté client via hash (`#/recettes`, `#/recettes/:id`, `#/profil`, etc.)
 - Pages : Accueil, Recettes, Détail recette, Proposer, À propos, Contact, Mentions légales, 404
 
----
-
-## Fonctionnalités prévues (prochaine phase)
-
 ### Back-end Node.js / Express
 - API REST complète (recettes, utilisateurs, commentaires, notes, follows)
 - Authentification par sessions (express-session + connect-sqlite3)
@@ -66,13 +64,9 @@ Projet académique EFREI — module **TI616 Numérique Durable** (Groupe 3).
 - Tests unitaires back-end avec Jest + Supertest
 - Tests d'intégration base de données
 
-### Optimisation Green IT (phase finale)
-- Réécriture du front-end en HTML/CSS/JS natif (sans React, sans CDN)
-- Mesure et comparaison des deux versions (empreinte carbone, taille de page, nombre de requêtes HTTP)
-
 ---
 
-## Stack technique
+### Dépendances et installation
 
 | Couche | Technologie | Justification Green IT |
 |---|---|---|
@@ -83,9 +77,32 @@ Projet académique EFREI — module **TI616 Numérique Durable** (Groupe 3).
 | Base de données (à venir) | SQLite via `better-sqlite3` | Fichier unique, pas de serveur BDD séparé, I/O minimaux |
 | Tests (à venir) | Jest + Supertest | Dépendances de dev uniquement, non incluses en prod |
 
+> Note: sur Windows, l'installation de modules natifs comme `bcrypt` ou `better-sqlite3` peut nécessiter le Windows SDK / Visual Studio C++ (workload "Desktop development with C++"). Voir instructions ci-dessous.
+
+#### Paquets de production
+
+| Paquet | Rôle |
+|---|---|
+| `express` | Serveur HTTP / routeur |
+| `better-sqlite3` | Pilote SQLite synchrone (simple, performant) |
+| `bcrypt` | Hash des mots de passe |
+| `express-session` | Gestion des sessions utilisateur |
+| `connect-sqlite3` | Stockage des sessions dans SQLite |
+| `express-validator` | Validation et sanitisation des entrées |
+| `cors` | En-têtes CORS pour le dev front/back séparés |
+| `dotenv` | Variables d'environnement (`.env`) |
+
+#### Dépendances de développement
+
+| Paquet | Rôle |
+|---|---|
+| `jest` | Framework de tests unitaires et d'intégration |
+| `supertest` | Requêtes HTTP dans les tests Jest |
+| `nodemon` | Redémarrage automatique du serveur en dev |
+
 ---
 
-## Lancer le site en local
+## Lancer le site en local (front-end)
 
 Le front-end est une SPA statique. Il suffit de servir le dossier `frontend/` avec n'importe quel serveur HTTP local.
 
@@ -112,26 +129,30 @@ Ouvrir [http://localhost:3000](http://localhost:3000) dans le navigateur.
 
 ---
 
-### Dépendances de production
+## Lancer le backend en local
 
-| Paquet | Rôle |
-|---|---|
-| `express` | Serveur HTTP / routeur |
-| `better-sqlite3` | Pilote SQLite synchrone (simple, performant) |
-| `bcrypt` | Hash des mots de passe |
-| `express-session` | Gestion des sessions utilisateur |
-| `connect-sqlite3` | Stockage des sessions dans SQLite |
-| `express-validator` | Validation et sanitisation des entrées |
-| `cors` | En-têtes CORS pour le dev front/back séparés |
-| `dotenv` | Variables d'environnement (`.env`) |
+```bash
+# Installer les dépendances
+npm install
 
-### Dépendances de développement
+# Initialisation de la db
+npm run db:init
 
-| Paquet | Rôle |
-|---|---|
-| `jest` | Framework de tests unitaires et d'intégration |
-| `supertest` | Requêtes HTTP dans les tests Jest |
-| `nodemon` | Redémarrage automatique du serveur en dev |
+# Démarrer le serveur
+npm run start
+```
+
+Ouvrir [http://localhost:3000/api/health](http://localhost:3000/api/health) dans le navigateur. Si tout est ok vous verrez :
+
+```json
+{"status":"ok","env":"development"}
+```
+
+### Développement
+
+```bash
+npm run dev
+```
 
 ---
 
