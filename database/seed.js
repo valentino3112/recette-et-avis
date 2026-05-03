@@ -7,11 +7,20 @@ const fs       = require('fs');
 const path     = require('path');
 const crypto   = require('crypto');
 
-const DB_PATH = process.env.DB_PATH || './database/recette_avis.sqlite';
+const DEFAULT_DB_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || './database';
+const DB_PATH = process.env.DB_PATH || path.join(DEFAULT_DB_DIR, 'recette_avis.sqlite');
+const SEED_IF_EMPTY = process.argv.includes('--if-empty') || process.env.SEED_IF_EMPTY === '1';
+const dbExists = fs.existsSync(DB_PATH);
+
+fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
 // Supprimer l'ancienne BDD pour repartir de zéro
-if (fs.existsSync(DB_PATH)) {
+if (dbExists && !SEED_IF_EMPTY) {
   fs.unlinkSync(DB_PATH);
+  for (const suffix of ['-wal', '-shm']) {
+    const sidecar = DB_PATH + suffix;
+    if (fs.existsSync(sidecar)) fs.unlinkSync(sidecar);
+  }
   console.log('Ancienne BDD supprimée.');
 }
 
@@ -21,6 +30,15 @@ const db = new DatabaseSync(DB_PATH);
 const schema = fs.readFileSync(path.join(__dirname, 'init.sql'), 'utf8');
 db.exec(schema);
 console.log('Schéma appliqué.');
+
+if (SEED_IF_EMPTY) {
+  const existingUsers = db.prepare('SELECT COUNT(*) AS n FROM utilisateurs').get().n;
+  if (existingUsers > 0) {
+    console.log(`BDD deja initialisee (${existingUsers} utilisateurs). Seed ignore.`);
+    db.close();
+    process.exit(0);
+  }
+}
 
 const uid = (prefix) => prefix + '_' + crypto.randomBytes(4).toString('hex');
 const HASH_ROUNDS = 12;

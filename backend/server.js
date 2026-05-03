@@ -13,6 +13,14 @@ const notesRoutes       = require('./routes/notes');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || '0.0.0.0';
+const DEFAULT_DB_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || './database';
+const DB_PATH = process.env.DB_PATH || path.join(DEFAULT_DB_DIR, 'recette_avis.sqlite');
+const SESSION_DIR = process.env.SESSION_DIR || path.join(path.dirname(DB_PATH), 'sessions');
+
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
 
 // ─── Middlewares globaux ──────────────────────────────────────────────────────
 app.use(express.json());
@@ -26,13 +34,14 @@ app.use(cors({
 
 // Sessions persistées en fichiers JSON (session-file-store, pur JS)
 app.use(session({
-  store:             new FileStore({ path: './database/sessions', ttl: 7 * 24 * 3600, retries: 0 }),
+  store:             new FileStore({ path: SESSION_DIR, ttl: 7 * 24 * 3600, retries: 0 }),
   secret:            process.env.SESSION_SECRET || 'dev-secret-change-me',
   resave:            false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
     secure:   process.env.NODE_ENV === 'production',
+    sameSite: process.env.COOKIE_SAMESITE || 'lax',
     maxAge:   7 * 24 * 60 * 60 * 1000, // 7 jours
   },
 }));
@@ -69,8 +78,8 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Démarrage ────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`Serveur démarré sur http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Serveur démarré sur http://${HOST}:${PORT}`);
   console.log(`API disponible sur http://localhost:${PORT}/api`);
 });
 

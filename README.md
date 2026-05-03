@@ -1,6 +1,6 @@
 # Recette & Avis
 
-**ATTENTION: BRANCHE DEVELOP PEUT ETRE INSTABLE**
+**ATTENTION: BRANCHE BACKEND**
 
 Plateforme communautaire de consultation et de partage de recettes de cuisine.
 Les utilisateurs peuvent parcourir les recettes, laisser une note (1–5 étoiles), poster des commentaires et suivre d'autres membres.
@@ -155,8 +155,37 @@ Quand le front tourne sur `localhost:3000`, `frontend/js/api.js` envoie automati
 
 | Email | Rôle | Mot de passe |
 |---|---|---|
-| `admin@recetteavis.fr` | Administrateur | n'importe lequel |
-| `camille@example.com` | Utilisateur | n'importe lequel |
+| `admin@recetteavis.fr` | Administrateur | `admin1234` |
+| `camille@example.com` | Utilisateur | `camille1234` |
+
+---
+
+## Déploiement Railway
+
+Railway est la cible recommandée pour ce projet, car l'application est un serveur Express qui sert le front-end et écrit dans une base SQLite locale.
+
+Configuration recommandée :
+
+```text
+Builder: Nixpacks
+Start command: npm run start
+Healthcheck path: /api/health
+Volume mount path: /app/database
+```
+
+Variables d'environnement Railway :
+
+```text
+NODE_ENV=production
+SESSION_SECRET=<valeur longue et secrète>
+DB_PATH=/app/database/recette_avis.sqlite
+SESSION_DIR=/app/database/sessions
+COOKIE_SAMESITE=lax
+```
+
+Le script `npm run start` lance `database/seed.js --if-empty` avant le serveur : la base est remplie au premier démarrage seulement, puis les données du volume sont conservées aux redéploiements.
+
+Vercel n'est pas recommandé pour cette version du projet : Express y tourne en fonction serverless, `express.static()` n'y sert pas les fichiers statiques, et le filesystem n'est pas persistant pour SQLite.
 
 ---
 
