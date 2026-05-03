@@ -101,19 +101,6 @@ serve frontend
 
 Ouvrir [http://localhost:3000](http://localhost:3000) dans le navigateur.
 
-### Option B — extension VS Code
-
-Installer l'extension **Live Server** (Ritwick Dey), faire un clic droit sur `frontend/index.html` → **Open with Live Server**.
-
-### Option C — Python (si Python est installé)
-
-```bash
-cd frontend
-python -m http.server 8080
-```
-
-Ouvrir [http://localhost:8080](http://localhost:8080).
-
 > **Pourquoi pas `file://` ?** Les scripts `type="text/babel"` chargés via `src=` sont bloqués par la politique CORS des navigateurs quand le protocole est `file://`. Il faut obligatoirement un serveur HTTP, même local.
 
 ### Comptes de démonstration
@@ -124,35 +111,6 @@ Ouvrir [http://localhost:8080](http://localhost:8080).
 | `camille@example.com` | Utilisateur | n'importe lequel |
 
 ---
-
-## Préparer le back-end
-
-### 1. Cloner le projet et installer les dépendances
-
-```bash
-git clone https://github.com/valentino3112/recette-et-avis.git
-cd recette-et-avis
-npm install
-```
-
-### 2. Configurer les variables d'environnement
-
-```bash
-cp .env.example .env
-# Éditer .env avec vos valeurs
-```
-
-### 3. Initialiser la base de données
-
-```bash
-npm run db:init
-```
-
-### 4. Lancer le serveur de développement
-
-```bash
-npm run dev
-```
 
 ### Dépendances de production
 
