@@ -1,0 +1,277 @@
+# Recette & Avis — Tests API
+# Extension VS Code requise : REST Client (Huachao Mao)
+# Lancer le serveur d'abord : npm run dev
+# Les requêtes s'exécutent dans l'ordre — respecter la séquence pour les tests auth
+
+@base = http://localhost:3001/api
+
+
+### ══════════════════════════════════
+###  SANTÉ
+### ══════════════════════════════════
+
+### Health check
+GET http://localhost:3001/api/health
+
+
+### ══════════════════════════════════
+###  AUTH
+### ══════════════════════════════════
+
+### 1. Connexion admin
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@recetteavis.fr",
+  "password": "admin1234"
+}
+
+###
+
+### 2. Connexion utilisateur simple
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "camille@example.com",
+  "password": "camille1234"
+}
+
+###
+
+### 3. Qui suis-je ? (session active requise)
+GET {{base}}/auth/me
+
+###
+
+### 4. Mauvais mot de passe → 401 attendu
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@recetteavis.fr",
+  "password": "mauvais"
+}
+
+###
+
+### 5. Email invalide → 400 attendu
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "pasunmail",
+  "password": "admin1234"
+}
+
+###
+
+### 6. Déconnexion
+POST {{base}}/auth/logout
+
+
+### ══════════════════════════════════
+###  UTILISATEURS
+### ══════════════════════════════════
+
+### 7. Profil public d'un utilisateur
+GET {{base}}/users/u1
+
+###
+
+### 8. Liste paginée (admin uniquement — se connecter d'abord)
+GET {{base}}/users?page=1&limit=20
+
+###
+
+### 9. Inscription d'un nouvel utilisateur
+POST {{base}}/users
+Content-Type: application/json
+
+{
+  "nom": "Test User",
+  "email": "test@example.com",
+  "password": "motdepasse123"
+}
+
+###
+
+### 10. Email déjà utilisé → 409 attendu
+POST {{base}}/users
+Content-Type: application/json
+
+{
+  "nom": "Doublon",
+  "email": "camille@example.com",
+  "password": "motdepasse123"
+}
+
+###
+
+### 11. Followers de l'admin
+GET {{base}}/users/u1/followers
+
+###
+
+### 12. Abonnements de Camille
+GET {{base}}/users/u2/following
+
+
+### ══════════════════════════════════
+###  RECETTES
+### ══════════════════════════════════
+
+### 13. Liste des recettes (page 1, 8 par page)
+GET {{base}}/recettes
+
+###
+
+### 14. Filtrer par catégorie
+GET {{base}}/recettes?cat=Végétarien
+
+###
+
+### 15. Trier par rapidité
+GET {{base}}/recettes?sort=rapides
+
+###
+
+### 16. Filtrer + trier + paginer
+GET {{base}}/recettes?cat=Dessert&sort=mieux-notées&page=1&limit=4
+
+###
+
+### 17. Détail d'une recette
+GET {{base}}/recettes/r1
+
+###
+
+### 18. Recette inexistante → 404 attendu
+GET {{base}}/recettes/r999
+
+###
+
+### 19. Créer une recette (connexion requise)
+POST {{base}}/recettes
+Content-Type: application/json
+
+{
+  "titre": "Soupe de test",
+  "description": "Une soupe pour tester l'API.",
+  "categorie": "Entrée",
+  "temps_preparation": 20,
+  "ingredients": ["1 litre d'eau", "1 cube de bouillon", "sel"],
+  "etapes": ["Porter à ébullition.", "Ajouter le bouillon.", "Saler."]
+}
+
+###
+
+### 20. Validation échouée — titre trop court → 400 attendu
+POST {{base}}/recettes
+Content-Type: application/json
+
+{
+  "titre": "ok",
+  "categorie": "Entrée",
+  "temps_preparation": 10,
+  "ingredients": ["eau"],
+  "etapes": ["cuire"]
+}
+
+
+### ══════════════════════════════════
+###  NOTES
+### ══════════════════════════════════
+
+### 21. Stats des notes pour une recette (public)
+GET {{base}}/recettes/r1/notes
+
+###
+
+### 22. Ma note sur une recette (connexion requise)
+GET {{base}}/recettes/r1/notes/moi
+
+###
+
+### 23. Noter une recette (connexion requise)
+POST {{base}}/recettes/r1/notes
+Content-Type: application/json
+
+{
+  "valeur": 5
+}
+
+###
+
+### 24. Note invalide → 400 attendu
+POST {{base}}/recettes/r1/notes
+Content-Type: application/json
+
+{
+  "valeur": 9
+}
+
+
+### ══════════════════════════════════
+###  COMMENTAIRES
+### ══════════════════════════════════
+
+### 25. Commentaires d'une recette (public)
+GET {{base}}/recettes/r1/commentaires
+
+###
+
+### 26. Ajouter un commentaire (connexion requise)
+POST {{base}}/recettes/r1/commentaires
+Content-Type: application/json
+
+{
+  "contenu": "Excellent ! Recette testée et approuvée."
+}
+
+###
+
+### 27. Commentaire trop court → 400 attendu
+POST {{base}}/recettes/r1/commentaires
+Content-Type: application/json
+
+{
+  "contenu": "ok"
+}
+
+
+### ══════════════════════════════════
+###  FOLLOW
+### ══════════════════════════════════
+
+### 28. Suivre un utilisateur (connexion requise — toggle)
+POST {{base}}/users/u3/follow
+
+###
+
+### 29. Se suivre soi-même → 400 attendu (connexion requise)
+POST {{base}}/users/u1/follow
+
+
+### ══════════════════════════════════
+###  ADMIN
+### ══════════════════════════════════
+
+### 30. Changer le statut d'une recette (admin requis)
+PATCH {{base}}/recettes/r1/statut
+Content-Type: application/json
+
+{
+  "statut": "approuvee"
+}
+
+###
+
+### 31. Promouvoir un utilisateur en admin (admin requis)
+PATCH {{base}}/users/u5/role
+Content-Type: application/json
+
+{
+  "role": "admin"
+}

@@ -1,8 +1,8 @@
 // Script de seed : crée la BDD et insère les données de démonstration.
 // Usage : node database/seed.js
 require('dotenv').config();
-const Database = require('better-sqlite3');
-const bcrypt   = require('bcrypt');
+const { DatabaseSync } = require('node:sqlite');
+const bcrypt           = require('bcryptjs');
 const fs       = require('fs');
 const path     = require('path');
 const crypto   = require('crypto');
@@ -15,7 +15,7 @@ if (fs.existsSync(DB_PATH)) {
   console.log('Ancienne BDD supprimée.');
 }
 
-const db = new Database(DB_PATH);
+const db = new DatabaseSync(DB_PATH);
 
 // Appliquer le schéma
 const schema = fs.readFileSync(path.join(__dirname, 'init.sql'), 'utf8');

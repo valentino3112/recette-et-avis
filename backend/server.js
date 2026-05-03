@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express      = require('express');
 const session      = require('express-session');
-const SQLiteStore  = require('connect-sqlite3')(session);
+const FileStore    = require('session-file-store')(session);
 const cors         = require('cors');
 const path         = require('path');
 
@@ -24,9 +24,9 @@ app.use(cors({
   credentials: true, // nécessaire pour envoyer les cookies de session
 }));
 
-// Sessions persistées dans SQLite
+// Sessions persistées en fichiers JSON (session-file-store, pur JS)
 app.use(session({
-  store:             new SQLiteStore({ db: 'sessions.sqlite', dir: './database' }),
+  store:             new FileStore({ path: './database/sessions', ttl: 7 * 24 * 3600, retries: 0 }),
   secret:            process.env.SESSION_SECRET || 'dev-secret-change-me',
   resave:            false,
   saveUninitialized: false,
@@ -49,13 +49,11 @@ app.use('/api/commentaires',                     commentairesRoutes);
 // Notes : montage nested
 app.use('/api/recettes/:recetteId/notes', notesRoutes);
 
-// ─── Servir le front-end statique en production ───────────────────────────────
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
-  });
-}
+// ─── Servir le front-end statique (dev + production) ─────────────────────────
+app.use(express.static(path.join(__dirname, '../frontend')));
+app.get('/', (_, res) => {
+  res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
+});
 
 // ─── Route de santé ───────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

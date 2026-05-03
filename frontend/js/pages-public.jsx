@@ -1,5 +1,5 @@
 // Public pages: Home, RecipeList, RecipeDetail, NotFound
-const { useState: useStateP, useMemo: useMemoP } = React;
+const { useState: useStateP, useMemo: useMemoP, useEffect: useEffectP } = React;
 
 function RecipeCard({ r, state, navigate, glyph }) {
   const avg = window.RA_getAvg(state.notes, r.id);
@@ -162,64 +162,90 @@ function RecipeList({ state, navigate, route }) {
 }
 
 function RecipeDetail({ state, setState, navigate, route, currentUser, showImages }) {
-  const r = window.RA_recipeById(state.recipes, route.params.id);
-  if (!r) return <NotFound navigate={navigate} />;
-  const avg = window.RA_getAvg(state.notes, r.id);
-  const count = window.RA_getNoteCount(state.notes, r.id);
-  const myNote = currentUser ? window.RA_noteByUser(state.notes, r.id, currentUser.id) : null;
-  const comments = state.comments.
-  filter((c) => c.recette_id === r.id).
-  sort((a, b) => b.date_commentaire.localeCompare(a.date_commentaire));
+  const recetteId = route.params.id;
+
+  // Chercher la recette dans le state global (chargé depuis l'API)
+  const r = window.RA_recipeById(state.recipes, recetteId);
+
+  // Comments et note de l'utilisateur : chargés depuis l'API
+  const [comments, setComments] = useStateP([]);
+  const [myNote, setMyNote] = useStateP(null);
+  const [commentsLoading, setCommentsLoading] = useStateP(true);
 
   const [draft, setDraft] = useStateP("");
   const [editingId, setEditingId] = useStateP(null);
   const [editDraft, setEditDraft] = useStateP("");
   const [error, setError] = useStateP("");
 
-  function rate(v) {
-    if (!currentUser) {navigate("/connexion");return;}
-    setState((s) => {
-      const existing = s.notes.find((n) => n.recette_id === r.id && n.utilisateur_id === currentUser.id);
-      let notes;
-      if (existing) {
-        notes = s.notes.map((n) => n === existing ? { ...n, valeur: v } : n);
-      } else {
-        notes = [...s.notes, { id: window.RA_uid("n"), recette_id: r.id, utilisateur_id: currentUser.id, valeur: v }];
-      }
-      return { ...s, notes };
-    });
+  useEffectP(() => {
+    if (!recetteId) return;
+    setCommentsLoading(true);
+    setComments([]);
+    setMyNote(null);
+
+    const tasks = [window.RA_api.getCommentaires(recetteId).catch(() => [])];
+    if (currentUser) tasks.push(window.RA_api.getMaNote(recetteId).catch(() => ({ valeur: null })));
+
+    Promise.all(tasks).then(([cmts, noteData]) => {
+      setComments(cmts || []);
+      if (noteData) setMyNote(noteData.valeur != null ? noteData : null);
+    }).finally(() => setCommentsLoading(false));
+  }, [recetteId, currentUser?.id]);
+
+  if (!r) return <NotFound navigate={navigate} />;
+
+  const avg   = window.RA_getAvg(state.notes, r.id);
+  const count = window.RA_getNoteCount(state.notes, r.id);
+
+  async function rate(v) {
+    if (!currentUser) { navigate("/connexion"); return; }
+    try {
+      await window.RA_api.noter(recetteId, v);
+      setMyNote({ valeur: v });
+      // Mise à jour de l'agrégat dans le state global
+      setState(s => ({
+        ...s,
+        notes: s.notes.map(n =>
+          n.recette_id === recetteId && n._agg
+            ? { ...n, _moyenne: n._count > 0 ? ((n._moyenne * n._count - (myNote?.valeur || 0) + v) / n._count).toFixed(2) * 1 : v, _count: myNote ? n._count : n._count + 1 }
+            : n
+        ),
+      }));
+    } catch (_) {}
   }
 
-  function postComment(e) {
+  async function postComment(e) {
     e.preventDefault();
-    if (!currentUser) {navigate("/connexion");return;}
+    if (!currentUser) { navigate("/connexion"); return; }
     const txt = draft.trim();
-    if (txt.length < 3) {setError("Le commentaire doit faire au moins 3 caractères.");return;}
-    if (txt.length > 500) {setError("500 caractères maximum.");return;}
+    if (txt.length < 3) { setError("Le commentaire doit faire au moins 3 caractères."); return; }
+    if (txt.length > 500) { setError("500 caractères maximum."); return; }
     setError("");
-    setState((s) => ({
-      ...s,
-      comments: [...s.comments, {
-        id: window.RA_uid("c"),
-        recette_id: r.id,
-        utilisateur_id: currentUser.id,
-        contenu: txt,
-        date_commentaire: new Date().toISOString().slice(0, 10)
-      }]
-    }));
-    setDraft("");
+    try {
+      const c = await window.RA_api.addCommentaire(recetteId, txt);
+      setComments(cs => [c, ...cs]);
+      setDraft("");
+    } catch (_) {
+      setError("Erreur lors de l'envoi du commentaire.");
+    }
   }
-  function deleteComment(id) {
+
+  async function deleteComment(id) {
     if (!confirm("Supprimer ce commentaire ?")) return;
-    setState((s) => ({ ...s, comments: s.comments.filter((c) => c.id !== id) }));
+    try {
+      await window.RA_api.deleteCommentaire(id);
+      setComments(cs => cs.filter(c => c.id !== id));
+    } catch (_) {}
   }
-  function startEdit(c) {setEditingId(c.id);setEditDraft(c.contenu);}
-  function saveEdit() {
-    setState((s) => ({
-      ...s,
-      comments: s.comments.map((c) => c.id === editingId ? { ...c, contenu: editDraft.trim() } : c)
-    }));
-    setEditingId(null);setEditDraft("");
+
+  function startEdit(c) { setEditingId(c.id); setEditDraft(c.contenu); }
+
+  async function saveEdit() {
+    try {
+      const updated = await window.RA_api.editCommentaire(editingId, editDraft.trim());
+      setComments(cs => cs.map(c => c.id === editingId ? { ...c, contenu: updated.contenu } : c));
+      setEditingId(null); setEditDraft("");
+    } catch (_) {}
   }
 
   return (
@@ -265,9 +291,10 @@ function RecipeDetail({ state, setState, navigate, route, currentUser, showImage
         {currentUser ?
         <div className="row-flex">
             <StarInput value={myNote ? myNote.valeur : 0} onChange={rate} />
-            <span className="muted">{myNote ? `Vous avez noté ${myNote.valeur}/5 — cliquez pour modifier.` : "Cliquez pour noter (1 à 5)."}</span>
+            <span className="muted">
+              {myNote ? `Vous avez noté ${myNote.valeur}/5 — cliquez pour modifier.` : "Cliquez pour noter (1 à 5)."}
+            </span>
           </div> :
-
         <p className="muted">
             <a href="#/connexion" onClick={(e) => {e.preventDefault();navigate("/connexion");}}>Connectez-vous</a> pour noter cette recette.
           </p>
@@ -275,7 +302,9 @@ function RecipeDetail({ state, setState, navigate, route, currentUser, showImage
       </section>
 
       <section>
-        <h2 className="section-title">Commentaires ({comments.length})</h2>
+        <h2 className="section-title">
+          Commentaires {!commentsLoading && `(${comments.length})`}
+        </h2>
         {currentUser ?
         <form onSubmit={postComment} className="mb-3">
             <label htmlFor="cmt">Votre avis</label>
@@ -286,29 +315,30 @@ function RecipeDetail({ state, setState, navigate, route, currentUser, showImage
               <small className="muted">{draft.length}/500</small>
             </div>
           </form> :
-
         <p className="muted">
             <a href="#/connexion" onClick={(e) => {e.preventDefault();navigate("/connexion");}}>Connectez-vous</a> pour commenter.
           </p>
         }
 
-        {comments.length === 0 && <p className="muted">Aucun commentaire pour l'instant.</p>}
+        {commentsLoading && <p className="muted">Chargement des commentaires…</p>}
+        {!commentsLoading && comments.length === 0 && <p className="muted">Aucun commentaire pour l'instant.</p>}
+
         {comments.map((c) => {
-          const author = window.RA_userById(state.users, c.utilisateur_id);
-          const mine = currentUser && currentUser.id === c.utilisateur_id;
+          // L'API retourne utilisateur_id, utilisateur_nom, utilisateur_role directement
+          const mine  = currentUser && currentUser.id === c.utilisateur_id;
           const canMod = currentUser && currentUser.role === "admin";
           return (
             <article key={c.id} className="comment">
               <div className="head">
-                <a href={author ? `#/utilisateurs/${author.id}` : undefined}
+                <a href={`#/utilisateurs/${c.utilisateur_id}`}
                    className="author"
-                   style={author ? {color:"var(--ink)", textDecoration:"none"} : {}}
-                   onClick={author ? (e)=>{e.preventDefault();navigate(`/utilisateurs/${author.id}`);} : undefined}>
-                  {author ? author.nom : "Utilisateur supprimé"}
+                   style={{color:"var(--ink)", textDecoration:"none"}}
+                   onClick={(e)=>{e.preventDefault();navigate(`/utilisateurs/${c.utilisateur_id}`);}}>
+                  {c.utilisateur_nom || "Utilisateur supprimé"}
                 </a>
                 <span>·</span>
                 <span>{window.RA_shortDate(c.date_commentaire)}</span>
-                {author && author.role === "admin" && <span className="role-badge admin">admin</span>}
+                {c.utilisateur_role === "admin" && <span className="role-badge admin">admin</span>}
               </div>
               {editingId === c.id ?
               <>
@@ -318,7 +348,6 @@ function RecipeDetail({ state, setState, navigate, route, currentUser, showImage
                     <button className="small" onClick={() => setEditingId(null)}>Annuler</button>
                   </div>
                 </> :
-
               <>
                   <div>{c.contenu}</div>
                   {(mine || canMod) &&
@@ -356,7 +385,7 @@ function Mentions({ navigate }) {
       <button className="ghost small mb-2" onClick={() => navigate("/")}>← Accueil</button>
       <h1 style={{ fontFamily: "var(--serif)" }}>Mentions &amp; éco-conception</h1>
       <p>Recette &amp; Avis est un mini-projet pédagogique réalisé dans le cadre du module
-      <em> TI616 — Numérique Durable</em> à l'EFREI Paris (2025-2026), Groupe 2.</p>
+      <em> TI616 — Numérique Durable</em> à l'EFREI Paris (2025-2026), Groupe 3.</p>
       <h2>Indicateurs Green IT</h2>
       <table className="data">
         <thead><tr><th>Indicateur</th><th>Cible</th><th>Mesuré</th></tr></thead>

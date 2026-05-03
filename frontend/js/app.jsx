@@ -32,12 +32,89 @@ function parseRoute(hash) {
 }
 
 function App() {
-  const [state, setState] = useStateApp(() => window.RA_loadState());
+  const [state, setState] = useStateApp(() => ({
+    recipes:       [],
+    users:         [],
+    notes:         [],
+    follows:       [],
+    comments:      [],
+    sessionUserId: null,
+    loading:       true,
+  }));
   const [route, setRoute] = useStateApp(() => parseRoute(window.location.hash));
-  // Paramètres fixes du prototype front-end.
-  const showImages = false;
 
-  useEffectApp(() => { window.RA_saveState(state); }, [state]);
+  // ─── Initialisation depuis l'API au démarrage ────────────────────────────
+  useEffectApp(() => {
+    async function init() {
+      try {
+        const [meRes, recipesRes] = await Promise.allSettled([
+          window.RA_api.getMe(),
+          window.RA_api.getRecettes({ limit: 50 }),
+        ]);
+
+        const meUser = meRes.status === "fulfilled" ? meRes.value : null;
+
+        // Si connecté, charger les abonnements de l'utilisateur
+        let followsData = [];
+        if (meUser) {
+          followsData = await window.RA_api.getFollowing(meUser.id).catch(() => []);
+        }
+
+        setState(s => {
+          const next = { ...s, loading: false, users: [...s.users] };
+
+          if (meUser) {
+            next.sessionUserId = meUser.id;
+            next.users  = [meUser];
+            next.follows = followsData.map(f => ({
+              id:           "fl_" + f.id,
+              follower_id:  meUser.id,
+              following_id: f.id,
+            }));
+          }
+
+          if (recipesRes.status === "fulfilled") {
+            const recettes = recipesRes.value.recettes || [];
+            next.recipes = recettes.map(window.RA_mapApiRecette);
+
+            // Notes agrégées par recette (pour l'affichage des étoiles)
+            next.notes = recettes
+              .filter(r => r.note_count > 0)
+              .map(r => ({
+                id:         "agg_" + r.id,
+                recette_id: r.id,
+                _agg:       true,
+                _moyenne:   r.note_moyenne,
+                _count:     r.note_count,
+              }));
+
+            // Ajouter les auteurs des recettes dans state.users
+            const authorMap = {};
+            recettes.forEach(r => {
+              if (r.auteur_id && !authorMap[r.auteur_id]) {
+                authorMap[r.auteur_id] = {
+                  id:   r.auteur_id,
+                  nom:  r.auteur_nom,
+                  role: r.auteur_role || "user",
+                };
+              }
+            });
+            const knownIds = new Set(next.users.map(u => u.id));
+            Object.values(authorMap).forEach(u => {
+              if (!knownIds.has(u.id)) next.users.push(u);
+            });
+          }
+
+          return next;
+        });
+      } catch (_) {
+        setState(s => ({ ...s, loading: false }));
+      }
+    }
+    init();
+  }, []);
+
+  // ─── Hash routing ────────────────────────────────────────────────────────
   useEffectApp(() => {
     const onHash = () => setRoute(parseRoute(window.location.hash));
     window.addEventListener("hashchange", onHash);
@@ -61,31 +138,45 @@ function App() {
     root.style.setProperty("--accent-soft", a.soft);
   }, []);
 
-  const currentUser = state.sessionUserId ? state.users.find(u => u.id === state.sessionUserId) : null;
+  const currentUser = state.sessionUserId
+    ? state.users.find(u => u.id === state.sessionUserId) || null
+    : null;
 
-  function logout() {
-    setState(s => ({ ...s, sessionUserId: null }));
+  async function logout() {
+    try { await window.RA_api.logout(); } catch (_) {}
+    setState(s => ({ ...s, sessionUserId: null, follows: [] }));
     navigate("/");
+  }
+
+  // Écran de chargement pendant l'initialisation API
+  if (state.loading) {
+    return (
+      <div className="app">
+        <div className="shell" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+          <p className="muted">Chargement…</p>
+        </div>
+      </div>
+    );
   }
 
   let page;
   switch (route.name) {
-    case "home": page = <Home state={state} navigate={navigate} />; break;
-    case "list": page = <RecipeList state={state} navigate={navigate} route={route} />; break;
-    case "detail": page = <RecipeDetail state={state} setState={setState} navigate={navigate} route={route} currentUser={currentUser} showImages={showImages} />; break;
-    case "login": page = <Login state={state} setState={setState} navigate={navigate} />; break;
-    case "register": page = <Register state={state} setState={setState} navigate={navigate} />; break;
-    case "profile": page = <Profile state={state} setState={setState} navigate={navigate} currentUser={currentUser} />; break;
-    case "admin": page = <AdminDash state={state} navigate={navigate} currentUser={currentUser} />; break;
+    case "home":          page = <Home state={state} navigate={navigate} />; break;
+    case "list":          page = <RecipeList state={state} navigate={navigate} route={route} />; break;
+    case "detail":        page = <RecipeDetail state={state} setState={setState} navigate={navigate} route={route} currentUser={currentUser} showImages={false} />; break;
+    case "login":         page = <Login state={state} setState={setState} navigate={navigate} />; break;
+    case "register":      page = <Register state={state} setState={setState} navigate={navigate} />; break;
+    case "profile":       page = <Profile state={state} setState={setState} navigate={navigate} currentUser={currentUser} />; break;
+    case "admin":         page = <AdminDash state={state} navigate={navigate} currentUser={currentUser} />; break;
     case "admin-recipes": page = <AdminRecipes state={state} setState={setState} navigate={navigate} currentUser={currentUser} />; break;
-    case "admin-users": page = <AdminUsers state={state} setState={setState} navigate={navigate} currentUser={currentUser} />; break;
-    case "admin-comments": page = <AdminComments state={state} setState={setState} navigate={navigate} currentUser={currentUser} />; break;
-    case "mentions": page = <Mentions navigate={navigate} />; break;
-    case "submit": page = <SubmitRecipe state={state} setState={setState} navigate={navigate} currentUser={currentUser} />; break;
-    case "about": page = <About navigate={navigate} />; break;
-    case "contact": page = <Contact navigate={navigate} />; break;
-    case "user": page = <UserProfile state={state} setState={setState} navigate={navigate} route={route} currentUser={currentUser} />; break;
-    default: page = <NotFound navigate={navigate} />;
+    case "admin-users":   page = <AdminUsers state={state} setState={setState} navigate={navigate} currentUser={currentUser} />; break;
+    case "admin-comments":page = <AdminComments state={state} setState={setState} navigate={navigate} currentUser={currentUser} />; break;
+    case "mentions":      page = <Mentions navigate={navigate} />; break;
+    case "submit":        page = <SubmitRecipe state={state} setState={setState} navigate={navigate} currentUser={currentUser} />; break;
+    case "about":         page = <About navigate={navigate} />; break;
+    case "contact":       page = <Contact navigate={navigate} />; break;
+    case "user":          page = <UserProfile state={state} setState={setState} navigate={navigate} route={route} currentUser={currentUser} />; break;
+    default:              page = <NotFound navigate={navigate} />;
   }
 
   return (

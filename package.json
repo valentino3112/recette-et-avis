@@ -4,24 +4,26 @@
   "description": "Plateforme communautaire de recettes et d'avis — EFREI TI616",
   "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/server.js",
-    "dev": "nodemon backend/server.js",
-    "db:init": "node database/seed.js",
+    "start": "node --experimental-sqlite backend/server.js",
+    "dev":   "nodemon backend/server.js",
+    "db:init": "node --experimental-sqlite database/seed.js",
     "test": "jest --runInBand --forceExit"
   },
+  "nodemonConfig": {
+    "nodeArgs": ["--experimental-sqlite"]
+  },
   "dependencies": {
-    "bcrypt": "^5.1.1",
-    "better-sqlite3": "^9.4.3",
-    "connect-sqlite3": "^0.9.14",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.18.3",
-    "express-session": "^1.18.0",
-    "express-validator": "^7.0.1"
+    "bcryptjs":          "^2.4.3",
+    "cors":              "^2.8.5",
+    "dotenv":            "^16.4.5",
+    "express":           "^4.18.3",
+    "express-session":   "^1.18.0",
+    "express-validator": "^7.0.1",
+    "session-file-store":"^1.5.0"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
-    "nodemon": "^3.1.0",
-    "supertest": "^7.0.0"
+    "jest":     "^29.7.0",
+    "nodemon":  "^3.1.0",
+    "supertest":"^7.0.0"
   }
 }

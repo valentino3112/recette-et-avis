@@ -1,25 +1,44 @@
 // Auth pages + profile
-const { useState: useStateA, useMemo: useMemoA } = React;
+const { useState: useStateA, useMemo: useMemoA, useEffect: useEffectA } = React;
 
 function Login({ state, setState, navigate }) {
   const [email, setEmail] = useStateA("");
   const [pwd, setPwd] = useStateA("");
   const [err, setErr] = useStateA("");
+  const [loading, setLoading] = useStateA(false);
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     if (!email.includes("@")) { setErr("Email invalide."); return; }
     if (!pwd) { setErr("Mot de passe requis."); return; }
-    const u = state.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (!u) { setErr("Identifiants incorrects."); return; }
-    setState(s => ({ ...s, sessionUserId: u.id }));
-    navigate(u.role === "admin" ? "/admin" : "/profil");
+    setErr(""); setLoading(true);
+    try {
+      const u = await window.RA_api.login(email.trim(), pwd);
+      setState(s => {
+        const users = s.users.some(x => x.id === u.id)
+          ? s.users.map(x => x.id === u.id ? { ...x, ...u } : x)
+          : [...s.users, u];
+        return { ...s, users, sessionUserId: u.id };
+      });
+      navigate(u.role === "admin" ? "/admin" : "/profil");
+    } catch (err) {
+      setErr(
+        err.status === 401 ? "Identifiants incorrects." :
+        err.status === 400 ? "Email invalide." :
+        "Erreur serveur, réessayez."
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <div className="auth-card">
       <h1 style={{fontFamily:"var(--serif)", fontSize: 24}}>Connexion</h1>
-      <p className="muted" style={{fontSize:14}}>Comptes de démo : <code>admin@recetteavis.fr</code> ou <code>camille@example.com</code> · n'importe quel mot de passe.</p>
+      <p className="muted" style={{fontSize:14}}>
+        Comptes de démo : <code>admin@recetteavis.fr</code> / <code>admin1234</code>
+        &nbsp;ou <code>camille@example.com</code> / <code>camille1234</code>
+      </p>
       <form onSubmit={submit} noValidate>
         <div className="field">
           <label htmlFor="login-email">Email</label>
@@ -30,7 +49,9 @@ function Login({ state, setState, navigate }) {
           <input id="login-pwd" type="password" value={pwd} onChange={(e)=>setPwd(e.target.value)} autoComplete="current-password" required />
         </div>
         {err && <div className="notice warn" role="alert">{err}</div>}
-        <button type="submit" className="primary" style={{width:"100%"}}>Se connecter</button>
+        <button type="submit" className="primary" style={{width:"100%"}} disabled={loading}>
+          {loading ? "Connexion…" : "Se connecter"}
+        </button>
       </form>
       <p className="mt-3 muted" style={{fontSize:14, textAlign:"center"}}>
         Pas encore de compte ?{" "}
@@ -46,33 +67,46 @@ function Register({ state, setState, navigate }) {
   const [pwd, setPwd] = useStateA("");
   const [pwd2, setPwd2] = useStateA("");
   const [err, setErr] = useStateA({});
+  const [loading, setLoading] = useStateA(false);
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     const errs = {};
-    if (nom.trim().length < 2) errs.nom = "Nom requis (≥ 2 caractères).";
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) errs.email = "Email invalide.";
-    if (state.users.some(u => u.email.toLowerCase() === email.toLowerCase())) errs.email = "Email déjà utilisé.";
-    if (pwd.length < 8) errs.pwd = "Mot de passe : 8 caractères minimum.";
-    if (pwd !== pwd2) errs.pwd2 = "Les mots de passe ne correspondent pas.";
+    if (nom.trim().length < 2)                              errs.nom  = "Nom requis (≥ 2 caractères).";
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))        errs.email = "Email invalide.";
+    if (pwd.length < 8)                                     errs.pwd  = "Mot de passe : 8 caractères minimum.";
+    if (pwd !== pwd2)                                       errs.pwd2 = "Les mots de passe ne correspondent pas.";
     setErr(errs);
     if (Object.keys(errs).length) return;
-    const u = {
-      id: window.RA_uid("u"),
-      nom: nom.trim(),
-      email: email.trim().toLowerCase(),
-      role: "user",
-      date_creation: new Date().toISOString().slice(0,10),
-      mot_de_passe: "•••",
-    };
-    setState(s => ({ ...s, users: [...s.users, u], sessionUserId: u.id }));
-    navigate("/profil");
+
+    setLoading(true);
+    try {
+      // POST /api/users crée le compte ET établit la session côté serveur
+      const u = await window.RA_api.register(nom.trim(), email.trim(), pwd);
+      setState(s => ({
+        ...s,
+        users: [...s.users, u],
+        sessionUserId: u.id,
+      }));
+      navigate("/profil");
+    } catch (err) {
+      if (err.status === 409) {
+        setErr(e => ({ ...e, email: "Email déjà utilisé." }));
+      } else if (err.status === 400) {
+        const msg = err.data?.errors?.[0]?.msg || "Données invalides.";
+        setErr(e => ({ ...e, _general: msg }));
+      } else {
+        setErr(e => ({ ...e, _general: "Erreur serveur, réessayez." }));
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <div className="auth-card">
       <h1 style={{fontFamily:"var(--serif)", fontSize: 24}}>Créer un compte</h1>
-      <p className="muted" style={{fontSize:14}}>Validation côté serveur · mot de passe hashé avec bcrypt.</p>
+      <p className="muted" style={{fontSize:14}}>Mot de passe hashé avec bcrypt · validation côté serveur.</p>
       <form onSubmit={submit} noValidate>
         <div className="field">
           <label htmlFor="reg-nom">Nom</label>
@@ -95,7 +129,10 @@ function Register({ state, setState, navigate }) {
           <input id="reg-pwd2" type="password" value={pwd2} onChange={(e)=>setPwd2(e.target.value)} autoComplete="new-password" />
           {err.pwd2 && <div className="err">{err.pwd2}</div>}
         </div>
-        <button type="submit" className="primary" style={{width:"100%"}}>Créer mon compte</button>
+        {err._general && <div className="notice warn">{err._general}</div>}
+        <button type="submit" className="primary" style={{width:"100%"}} disabled={loading}>
+          {loading ? "Création…" : "Créer mon compte"}
+        </button>
       </form>
       <p className="mt-3 muted" style={{fontSize:14, textAlign:"center"}}>
         Déjà inscrit ?{" "}
@@ -106,6 +143,30 @@ function Register({ state, setState, navigate }) {
 }
 
 function Profile({ state, setState, navigate, currentUser }) {
+  const [nom, setNom] = useStateA(currentUser?.nom ?? "");
+  const [email, setEmail] = useStateA(currentUser?.email ?? "");
+  const [saved, setSaved] = useStateA(false);
+  const [saveError, setSaveError] = useStateA("");
+  const [confirmDelete, setConfirmDelete] = useStateA(false);
+  const [followerCount, setFollowerCount] = useStateA(null);
+  const [followingCount, setFollowingCount] = useStateA(null);
+
+  useEffectA(() => {
+    if (currentUser) {
+      window.RA_api.getUser(currentUser.id)
+        .then(u => { setFollowerCount(u.followerCount ?? 0); setFollowingCount(u.followingCount ?? 0); })
+        .catch(() => {});
+      setNom(currentUser.nom);
+      setEmail(currentUser.email);
+    }
+  }, [currentUser?.id]);
+
+  // useMemo doit être avant tout return conditionnel (Rules of Hooks)
+  const myRecipes = useMemoA(
+    () => currentUser ? window.RA_recipesByAuthor(state.recipes, state.users, currentUser.id) : [],
+    [state.recipes, state.users, currentUser?.id]
+  );
+
   if (!currentUser) {
     return (
       <div className="auth-card">
@@ -114,34 +175,40 @@ function Profile({ state, setState, navigate, currentUser }) {
       </div>
     );
   }
-  const [nom, setNom] = useStateA(currentUser.nom);
-  const [email, setEmail] = useStateA(currentUser.email);
-  const [saved, setSaved] = useStateA(false);
-  const [confirmDelete, setConfirmDelete] = useStateA(false);
 
-  const myRecipes = useMemoA(() => window.RA_recipesByAuthor(state.recipes, state.users, currentUser.id), [state.recipes, state.users, currentUser.id]);
-  const myComments = state.comments.filter(c => c.utilisateur_id === currentUser.id);
-  const myNotes = state.notes.filter(n => n.utilisateur_id === currentUser.id);
-
-  function save(e) {
+  async function save(e) {
     e.preventDefault();
-    setState(s => ({
-      ...s,
-      users: s.users.map(u => u.id === currentUser.id ? { ...u, nom: nom.trim(), email: email.trim() } : u),
-    }));
-    setSaved(true);
-    setTimeout(()=>setSaved(false), 2000);
+    setSaveError("");
+    try {
+      const u = await window.RA_api.updateUser(currentUser.id, { nom: nom.trim(), email: email.trim() });
+      setState(s => ({
+        ...s,
+        users: s.users.map(x => x.id === currentUser.id ? { ...x, ...u } : x),
+      }));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setSaveError(
+        err.status === 409 ? "Email déjà utilisé." :
+        err.status === 400 ? "Données invalides." :
+        "Erreur lors de l'enregistrement."
+      );
+    }
   }
-  function deleteAccount() {
-    setState(s => ({
-      ...s,
-      users: s.users.filter(u => u.id !== currentUser.id),
-      comments: s.comments.filter(c => c.utilisateur_id !== currentUser.id),
-      notes: s.notes.filter(n => n.utilisateur_id !== currentUser.id),
-      follows: s.follows.filter(f => f.follower_id !== currentUser.id && f.following_id !== currentUser.id),
-      sessionUserId: null,
-    }));
-    navigate("/");
+
+  async function deleteAccount() {
+    try {
+      await window.RA_api.deleteUser(currentUser.id);
+      setState(s => ({
+        ...s,
+        users:         s.users.filter(u => u.id !== currentUser.id),
+        recipes:       s.recipes.filter(r => r.auteur_id !== currentUser.id),
+        sessionUserId: null,
+      }));
+      navigate("/");
+    } catch (_) {
+      alert("Erreur lors de la suppression du compte.");
+    }
   }
 
   return (
@@ -165,6 +232,7 @@ function Profile({ state, setState, navigate, currentUser }) {
             <label>Inscrit le</label>
             <input value={window.RA_shortDate(currentUser.date_creation)} disabled />
           </div>
+          {saveError && <div className="notice warn">{saveError}</div>}
           <div className="row-flex">
             <button type="submit" className="primary">Enregistrer</button>
             {saved && <small style={{color:"var(--eco)"}}>✓ Modifications enregistrées</small>}
@@ -175,41 +243,25 @@ function Profile({ state, setState, navigate, currentUser }) {
       <div className="profile-card mb-3">
         <h2 style={{fontFamily:"var(--serif)", fontSize:18}}>Mon activité</h2>
         <div className="row-flex" style={{gap:24, flexWrap:"wrap"}}>
-          <div><strong>{myNotes.length}</strong> <span className="muted">note{myNotes.length>1?"s":""}</span></div>
-          <div><strong>{myComments.length}</strong> <span className="muted">commentaire{myComments.length>1?"s":""}</span></div>
+          <div><strong>{myRecipes.length}</strong> <span className="muted">recette{myRecipes.length>1?"s":""}</span></div>
           <div>
-            <strong>{state.follows.filter(f=>f.following_id===currentUser.id).length}</strong>{" "}
+            <strong>{followerCount ?? "…"}</strong>{" "}
             <a href={`#/utilisateurs/${currentUser.id}/followers`} className="muted"
-               onClick={(e)=>{e.preventDefault();navigate(`/utilisateurs/${currentUser.id}/followers`);}}>abonnés</a>
+               onClick={(e)=>{e.preventDefault();navigate(`/utilisateurs/${currentUser.id}/followers`);}}>
+              abonné{followerCount !== 1 ? "s" : ""}
+            </a>
           </div>
           <div>
-            <strong>{state.follows.filter(f=>f.follower_id===currentUser.id).length}</strong>{" "}
+            <strong>{followingCount ?? "…"}</strong>{" "}
             <a href={`#/utilisateurs/${currentUser.id}/following`} className="muted"
-               onClick={(e)=>{e.preventDefault();navigate(`/utilisateurs/${currentUser.id}/following`);}}>abonnements</a>
+               onClick={(e)=>{e.preventDefault();navigate(`/utilisateurs/${currentUser.id}/following`);}}>
+              abonnement{followingCount !== 1 ? "s" : ""}
+            </a>
           </div>
           <div style={{marginLeft:"auto"}}>
             <button className="ghost small" onClick={()=>navigate(`/utilisateurs/${currentUser.id}`)}>Voir mon profil public →</button>
           </div>
         </div>
-        {myComments.length > 0 && (
-          <>
-            <hr />
-            <h3 style={{fontSize:14, color:"var(--ink-3)", textTransform:"uppercase", letterSpacing:"0.06em"}}>Mes derniers commentaires</h3>
-            {myComments.slice(0,3).map(c => {
-              const r = window.RA_recipeById(state.recipes, c.recette_id);
-              return (
-                <div key={c.id} className="comment">
-                  <div className="head">
-                    <a href={`#/recettes/${c.recette_id}`} onClick={(e)=>{e.preventDefault();navigate(`/recettes/${c.recette_id}`);}}>{r ? r.titre : "Recette supprimée"}</a>
-                    <span>·</span>
-                    <span>{window.RA_shortDate(c.date_commentaire)}</span>
-                  </div>
-                  <div>{c.contenu}</div>
-                </div>
-              );
-            })}
-          </>
-        )}
       </div>
 
       <div className="profile-card mb-3">
@@ -258,7 +310,7 @@ function Profile({ state, setState, navigate, currentUser }) {
 
       <div className="profile-card" style={{borderColor:"var(--warn)"}}>
         <h2 style={{fontFamily:"var(--serif)", fontSize:18, color:"var(--warn)"}}>Zone dangereuse</h2>
-        <p className="muted" style={{fontSize:14}}>La suppression de votre compte est définitive et entraîne la suppression de vos commentaires et de vos notes.</p>
+        <p className="muted" style={{fontSize:14}}>La suppression de votre compte est définitive.</p>
         {!confirmDelete ? (
           <button className="danger" onClick={()=>setConfirmDelete(true)}>Supprimer mon compte</button>
         ) : (
