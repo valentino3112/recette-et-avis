@@ -1,5 +1,5 @@
 // Public user profile + follow system
-const { useState: useStateU, useMemo: useMemoU } = React;
+const { useState: useStateU, useMemo: useMemoU, useEffect: useEffectU } = React;
 
 function Avatar({ user, size }) {
   const cls = "avatar" + (size ? " " + size : "");
@@ -11,20 +11,27 @@ function FollowButton({ state, setState, navigate, currentUser, targetId }) {
     return <button className="follow-btn" onClick={()=>navigate("/connexion")}>+ Suivre</button>;
   }
   if (currentUser.id === targetId) return null;
+
   const following = window.RA_isFollowing(state.follows, currentUser.id, targetId);
-  function toggle() {
-    setState(s => {
-      if (following) {
-        return { ...s, follows: s.follows.filter(f => !(f.follower_id === currentUser.id && f.following_id === targetId)) };
-      }
-      return { ...s, follows: [...s.follows, {
-        id: window.RA_uid("f"),
-        follower_id: currentUser.id,
-        following_id: targetId,
-        date: new Date().toISOString().slice(0,10),
-      }]};
-    });
+
+  async function toggle() {
+    try {
+      const data = await window.RA_api.follow(targetId);
+      setState(s => {
+        if (data.following) {
+          return {
+            ...s,
+            follows: [...s.follows, { id: "fl_" + targetId, follower_id: currentUser.id, following_id: targetId }],
+          };
+        }
+        return {
+          ...s,
+          follows: s.follows.filter(f => !(f.follower_id === currentUser.id && f.following_id === targetId)),
+        };
+      });
+    } catch (_) {}
   }
+
   return (
     <button className={"follow-btn" + (following ? " following" : "")} onClick={toggle} aria-pressed={following}>
       {following ? "✓ Suivi" : "+ Suivre"}
@@ -34,7 +41,6 @@ function FollowButton({ state, setState, navigate, currentUser, targetId }) {
 
 function UserRow({ user, state, setState, navigate, currentUser }) {
   const recipeCount = window.RA_recipesByAuthor(state.recipes, state.users, user.id).length;
-  const followers = window.RA_followersOf(state.follows, user.id).length;
   return (
     <div className="user-row">
       <Avatar user={user} />
@@ -42,7 +48,7 @@ function UserRow({ user, state, setState, navigate, currentUser }) {
          onClick={(e)=>{e.preventDefault();navigate(`/utilisateurs/${user.id}`);}}
          className="info" style={{textDecoration:"none", color:"inherit"}}>
         <div className="nom">{user.nom} {user.role === "admin" && <span className="role-badge admin" style={{marginLeft:4}}>admin</span>}</div>
-        <div className="meta">{recipeCount} recette{recipeCount>1?"s":""} · {followers} abonné{followers>1?"s":""}</div>
+        <div className="meta">{recipeCount} recette{recipeCount>1?"s":""}</div>
       </a>
       <FollowButton state={state} setState={setState} navigate={navigate} currentUser={currentUser} targetId={user.id} />
     </div>
@@ -50,17 +56,65 @@ function UserRow({ user, state, setState, navigate, currentUser }) {
 }
 
 function UserProfile({ state, setState, navigate, route, currentUser }) {
-  const user = window.RA_userById(state.users, route.params.id);
-  if (!user) return <NotFound navigate={navigate} />;
+  const userId = route.params.id;
+
+  // L'utilisateur peut être dans le state ou doit être chargé depuis l'API
+  const [user, setUser] = useStateU(() => window.RA_userById(state.users, userId) || null);
+  const [userLoading, setUserLoading] = useStateU(!window.RA_userById(state.users, userId));
+  const [followers, setFollowers] = useStateU([]);
+  const [following, setFollowing] = useStateU([]);
+  const [socialLoading, setSocialLoading] = useStateU(true);
 
   const [tab, setTab] = useStateU(route.params.tab || "recipes");
-  React.useEffect(() => { setTab(route.params.tab || "recipes"); }, [route.params.tab]);
 
-  const recipes = useMemoU(() => window.RA_recipesByAuthor(state.recipes, state.users, user.id), [state.recipes, state.users, user.id]);
-  const followers = useMemoU(() => window.RA_followersOf(state.follows, user.id), [state.follows, user.id]);
-  const following = useMemoU(() => window.RA_followingOf(state.follows, user.id), [state.follows, user.id]);
+  useEffectU(() => {
+    setTab(route.params.tab || "recipes");
+  }, [route.params.tab]);
 
-  const isMe = currentUser && currentUser.id === user.id;
+  useEffectU(() => {
+    setFollowers([]);
+    setFollowing([]);
+    setSocialLoading(true);
+
+    // Vérifier si l'utilisateur est déjà dans le state
+    const known = window.RA_userById(state.users, userId);
+    if (known) {
+      setUser(known);
+      setUserLoading(false);
+    } else {
+      setUserLoading(true);
+      window.RA_api.getUser(userId)
+        .then(u => {
+          setUser(u);
+          // Ajouter dans state.users pour les futures références
+          setState(s => ({
+            ...s,
+            users: s.users.some(x => x.id === u.id) ? s.users : [...s.users, u],
+          }));
+        })
+        .catch(() => setUser(null))
+        .finally(() => setUserLoading(false));
+    }
+
+    // Charger toujours les followers/following depuis l'API (données fraîches)
+    Promise.all([
+      window.RA_api.getFollowers(userId).catch(() => []),
+      window.RA_api.getFollowing(userId).catch(() => []),
+    ]).then(([fl, flg]) => {
+      setFollowers(fl);
+      setFollowing(flg);
+    }).finally(() => setSocialLoading(false));
+  }, [userId]);
+
+  // useMemo doit être avant tout return conditionnel (Rules of Hooks)
+  const recipes = useMemoU(() => window.RA_recipesByAuthor(state.recipes, state.users, userId), [state.recipes, state.users, userId]);
+
+  if (userLoading) {
+    return <p className="muted">Chargement du profil…</p>;
+  }
+  if (!user) return <NotFound navigate={navigate} />;
+
+  const isMe = currentUser && currentUser.id === userId;
 
   return (
     <>
@@ -77,14 +131,14 @@ function UserProfile({ state, setState, navigate, route, currentUser }) {
               <strong>{recipes.length}</strong> recette{recipes.length>1?"s":""}
             </button>
             <button className="stat linklike" onClick={()=>setTab("followers")}>
-              <strong>{followers.length}</strong> abonné{followers.length>1?"s":""}
+              <strong>{socialLoading ? "…" : followers.length}</strong> abonné{followers.length>1?"s":""}
             </button>
             <button className="stat linklike" onClick={()=>setTab("following")}>
-              <strong>{following.length}</strong> abonnement{following.length>1?"s":""}
+              <strong>{socialLoading ? "…" : following.length}</strong> abonnement{following.length>1?"s":""}
             </button>
           </div>
           <div className="actions">
-            {!isMe && <FollowButton state={state} setState={setState} navigate={navigate} currentUser={currentUser} targetId={user.id} />}
+            {!isMe && <FollowButton state={state} setState={setState} navigate={navigate} currentUser={currentUser} targetId={userId} />}
             {isMe && <button className="ghost small" onClick={()=>navigate("/profil")}>Modifier mon profil</button>}
           </div>
         </div>
@@ -122,23 +176,21 @@ function UserProfile({ state, setState, navigate, route, currentUser }) {
 
       {tab === "followers" && (
         <div>
-          {followers.length === 0 && <p className="muted">Aucun abonné pour l'instant.</p>}
-          {followers.map(f => {
-            const u = window.RA_userById(state.users, f.follower_id);
-            if (!u) return null;
-            return <UserRow key={f.id} user={u} state={state} setState={setState} navigate={navigate} currentUser={currentUser} />;
-          })}
+          {socialLoading && <p className="muted">Chargement…</p>}
+          {!socialLoading && followers.length === 0 && <p className="muted">Aucun abonné pour l'instant.</p>}
+          {followers.map(u => (
+            <UserRow key={u.id} user={u} state={state} setState={setState} navigate={navigate} currentUser={currentUser} />
+          ))}
         </div>
       )}
 
       {tab === "following" && (
         <div>
-          {following.length === 0 && <p className="muted">N'est abonné à personne pour l'instant.</p>}
-          {following.map(f => {
-            const u = window.RA_userById(state.users, f.following_id);
-            if (!u) return null;
-            return <UserRow key={f.id} user={u} state={state} setState={setState} navigate={navigate} currentUser={currentUser} />;
-          })}
+          {socialLoading && <p className="muted">Chargement…</p>}
+          {!socialLoading && following.length === 0 && <p className="muted">N'est abonné à personne pour l'instant.</p>}
+          {following.map(u => (
+            <UserRow key={u.id} user={u} state={state} setState={setState} navigate={navigate} currentUser={currentUser} />
+          ))}
         </div>
       )}
     </>

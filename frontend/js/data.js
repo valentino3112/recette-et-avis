@@ -233,13 +233,37 @@ function resetState() {
   return defaultState();
 }
 
+// Convertit une recette reçue de l'API vers la forme attendue par le front
+function mapApiRecette(r) {
+  return {
+    id:                r.id,
+    titre:             r.titre,
+    description:       r.description || "",
+    categorie:         r.categorie,
+    temps_preparation: r.temps_preparation,
+    auteur:            r.auteur_nom || r.auteur || "",
+    auteur_id:         r.auteur_id || null,
+    date:              r.date || r.date_creation || "",
+    image:             r.image || null,
+    statut:            r.statut || "approuvee",
+    ingredients:       Array.isArray(r.ingredients) ? r.ingredients : [],
+    etapes:            Array.isArray(r.etapes)       ? r.etapes       : [],
+  };
+}
+
 // Selectors / helpers
+// Les entrées de notes peuvent être des objets agrégat {_agg, _moyenne, _count}
+// créés à partir des données de la liste de recettes (note_moyenne / note_count).
 function getAvg(notes, recipeId) {
+  const agg = notes.find((n) => n.recette_id === recipeId && n._agg);
+  if (agg) return agg._moyenne || null;
   const ns = notes.filter((n) => n.recette_id === recipeId);
   if (!ns.length) return null;
   return ns.reduce((a, n) => a + n.valeur, 0) / ns.length;
 }
 function getNoteCount(notes, recipeId) {
+  const agg = notes.find((n) => n.recette_id === recipeId && n._agg);
+  if (agg) return agg._count || 0;
   return notes.filter((n) => n.recette_id === recipeId).length;
 }
 function userById(users, id) {
@@ -251,10 +275,13 @@ function userByName(users, nom) {
   return users.find((u) => u.nom.toLowerCase() === n || (u.role === "admin" && n === "admin")) || null;
 }
 function recipesByAuthor(recipes, users, userId) {
+  // Mode API : les recettes ont auteur_id
+  const byId = recipes.filter((r) => r.auteur_id === userId);
+  if (byId.length) return byId;
+  // Mode local : correspondance par nom
   const u = userById(users, userId);
   if (!u) return [];
   const n = u.nom.toLowerCase();
-  // Match by name OR by the literal "admin" alias used in seed data
   return recipes.filter((r) => {
     const a = (r.auteur || "").toLowerCase();
     return a === n || (u.role === "admin" && a === "admin");
@@ -295,6 +322,7 @@ Object.assign(window, {
   RA_saveState: saveState,
   RA_resetState: resetState,
   RA_CATEGORIES: CATEGORIES,
+  RA_mapApiRecette: mapApiRecette,
   RA_getAvg: getAvg,
   RA_getNoteCount: getNoteCount,
   RA_userById: userById,

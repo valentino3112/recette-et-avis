@@ -1,5 +1,5 @@
 // Submit recipe (logged-in user), About, Contact pages
-const { useState: useStateE } = React;
+const { useState: useStateE, useEffect: useEffectE } = React;
 
 function SubmitRecipe({ state, setState, navigate, currentUser }) {
   if (!currentUser) {
@@ -23,7 +23,7 @@ function SubmitRecipe({ state, setState, navigate, currentUser }) {
   const [err, setErr] = useStateE("");
   const [done, setDone] = useStateE(null);
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     if (titre.trim().length < 3) { setErr("Titre trop court (3 caractères mini)."); return; }
     if (description.trim().length < 10) { setErr("Description trop courte (10 caractères mini)."); return; }
@@ -34,20 +34,24 @@ function SubmitRecipe({ state, setState, navigate, currentUser }) {
     const t = parseInt(temps, 10);
     if (!t || t < 1 || t > 600) { setErr("Temps de préparation invalide."); return; }
     setErr("");
-    const r = {
-      id: window.RA_uid("r"),
-      titre: titre.trim(),
-      description: description.trim(),
-      ingredients: ing,
-      etapes: etp,
-      temps_preparation: t,
-      categorie,
-      image: null,
-      auteur: currentUser.nom,
-      date: new Date().toISOString().slice(0,10),
-    };
-    setState(s => ({ ...s, recipes: [r, ...s.recipes] }));
-    setDone(r.id);
+    try {
+      const data = await window.RA_api.createRecette({
+        titre: titre.trim(),
+        description: description.trim(),
+        categorie,
+        temps_preparation: t,
+        ingredients: ing,
+        etapes: etp,
+      });
+      // Récupérer la recette complète (l'API ne renvoie que l'id/titre)
+      const fullRecette = await window.RA_api.getRecette(data.id).catch(() => null);
+      if (fullRecette) {
+        setState(s => ({ ...s, recipes: [window.RA_mapApiRecette(fullRecette), ...s.recipes] }));
+      }
+      setDone(data.id);
+    } catch (err) {
+      setErr(err.data?.errors?.[0]?.msg || err.message || "Erreur lors de la publication.");
+    }
   }
 
   if (done) {
