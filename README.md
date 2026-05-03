@@ -29,6 +29,8 @@ Projet académique EFREI — module **TI616 Numérique Durable** (Groupe 3).
 
 ### Dépendances de production
 
+!!! attention il faut avoir windows sdk pour bcrypt et SQLite !!!
+
 | Paquet | Rôle |
 |---|---|
 | `express` | Serveur HTTP / routeur |
