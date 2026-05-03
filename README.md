@@ -1,6 +1,6 @@
 # Recette & Avis
 
-**ATTENTION: BRANCHE BACKEND**
+**ATTENTION: BRANCHE DEVELOP PEUT ETRE INSTABLE**
 
 Plateforme communautaire de consultation et de partage de recettes de cuisine.
 Les utilisateurs peuvent parcourir les recettes, laisser une note (1–5 étoiles), poster des commentaires et suivre d'autres membres.
