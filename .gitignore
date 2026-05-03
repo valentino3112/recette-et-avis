@@ -1,0 +1,46 @@
+# ─── Node ───────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# ─── Environnement ──────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── Base de données SQLite ─────────────────────────────
+*.sqlite
+*.sqlite3
+*.db
+
+# ─── Logs ───────────────────────────────────────────────
+logs/
+*.log
+
+# ─── Couverture de tests ────────────────────────────────
+coverage/
+.nyc_output/
+
+# ─── Build / dist ───────────────────────────────────────
+dist/
+build/
+
+# ─── Éditeurs ───────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ─── OS ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Divers ─────────────────────────────────────────────
+.cache/
+tmp/
