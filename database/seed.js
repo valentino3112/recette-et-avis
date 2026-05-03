@@ -72,7 +72,7 @@ const recettes = [
     description: 'Une tarte simple, sans moule, idéale pour finir des pommes fatiguées.',
     ingredients: ['1 pâte brisée', '4 pommes', '60 g de sucre', '1 c. à soupe de beurre', 'Cannelle'],
     etapes: ['Préchauffer le four à 200 °C.', 'Étaler la pâte sur une plaque, replier les bords.', 'Disposer les pommes en lamelles, saupoudrer de sucre et cannelle.', 'Cuire 30 minutes jusqu\'à ce que les bords soient dorés.'],
-    image: 'assets/img/tarte-aux-pommes.png',
+    image: 'assets/img/tarte-aux-pommes.webp',
   },
   {
     id: 'r2', auteur_id: 'u1', date: '2026-04-15', categorie: 'Végétarien', temps: 25,
@@ -80,7 +80,7 @@ const recettes = [
     description: 'Plat végétarien complet et nourrissant, prêt en 25 minutes.',
     ingredients: ['200 g de lentilles corail', '1 oignon', '400 ml de lait de coco', '1 c. à café de curry', 'Sel'],
     etapes: ['Émincer l\'oignon et le faire revenir.', 'Ajouter les lentilles, le curry, le lait de coco et 300 ml d\'eau.', 'Cuire 20 minutes à feu doux.', 'Saler, servir avec du riz.'],
-    image: 'assets/img/lentilles-corail-au-lait-de-coco.png',
+    image: 'assets/img/lentilles-corail-au-lait-de-coco.webp',
   },
   {
     id: 'r3', auteur_id: 'u1', date: '2026-04-18', categorie: 'Rapide (<30 min)', temps: 8,
@@ -104,7 +104,7 @@ const recettes = [
     description: 'Aglio e olio. Quatre ingrédients, pas un de plus.',
     ingredients: ['200 g de spaghettis', '3 gousses d\'ail', 'Huile d\'olive', 'Piment', 'Persil'],
     etapes: ['Cuire les pâtes al dente.', 'Faire dorer l\'ail dans l\'huile avec le piment.', 'Mélanger, ajouter le persil.'],
-    image: 'assets/img/pates-ail-et-huile-olive.png',
+    image: 'assets/img/pates-ail-et-huile-olive.webp',
   },
   {
     id: 'r6', auteur_id: 'u1', date: '2026-04-24', categorie: 'Entrée', temps: 30,
@@ -128,7 +128,7 @@ const recettes = [
     description: 'Dessert d\'automne, croustillant et fondant.',
     ingredients: ['3 pommes', '2 poires', '100 g farine', '80 g beurre', '60 g sucre roux'],
     etapes: ['Couper les fruits en cubes dans un plat.', 'Sabler farine, beurre, sucre du bout des doigts.', 'Couvrir les fruits, cuire 30 min à 180 °C.'],
-    image: null,
+    image: 'assets/img/gateau.webp',
   },
   {
     id: 'r9', auteur_id: 'u1', date: '2026-04-30', categorie: 'Végétarien', temps: 30,
@@ -136,7 +136,7 @@ const recettes = [
     description: 'Végétarien, riche en protéines, parfait avec du riz.',
     ingredients: ['400 g pois chiches', 'Tomate concassée', 'Oignon', 'Épices à curry', 'Coriandre'],
     etapes: ['Faire revenir l\'oignon, ajouter les épices.', 'Tomate et pois chiches, mijoter 20 min.', 'Servir avec coriandre.'],
-    image: 'assets/img/curry-de-pois-chiches.png',
+    image: 'assets/img/curry-de-pois-chiches.webp',
   },
 ];
 

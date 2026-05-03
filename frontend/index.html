@@ -3,28 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Recette & Avis — plateforme de recettes</title>
+  <title>Recette &amp; Avis — plateforme de recettes</title>
   <meta name="description" content="Plateforme de consultation de recettes avec notes, commentaires et espace administrateur." />
-  <!-- Removed external Google Fonts to avoid an extra network request and use system fonts for better eco-score -->
-  <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <noscript>Vous devez activer JavaScript pour utiliser ce prototype.</noscript>
+  <noscript>Vous devez activer JavaScript pour utiliser ce site.</noscript>
   <div id="root"></div>
-
-  <!-- Use production (minified) React builds to reduce payload. Keep Babel for now (prototype), but load deferred to avoid blocking rendering. -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin defer></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin defer></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js" defer></script>
-
-  <script src="js/api.js" defer></script>
-  <script src="js/data.js" defer></script>
-  <script type="text/babel" src="js/components.jsx" defer></script>
-  <script type="text/babel" src="js/pages-public.jsx" defer></script>
-  <script type="text/babel" src="js/pages-auth.jsx" defer></script>
-  <script type="text/babel" src="js/pages-admin.jsx" defer></script>
-  <script type="text/babel" src="js/pages-extra.jsx" defer></script>
-  <script type="text/babel" src="js/pages-user.jsx" defer></script>
-  <script type="text/babel" src="js/app.jsx" defer></script>
+  <script type="module" src="/js/main.jsx"></script>
 </body>
 </html>

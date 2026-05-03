@@ -27,6 +27,7 @@ coverage/
 # ─── Build / dist ───────────────────────────────────────
 dist/
 build/
+frontend/dist/
 
 # ─── Éditeurs ───────────────────────────────────────────
 .vscode/
@@ -41,6 +42,9 @@ build/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ─── Sessions ───────────────────────────────────────────
+database/sessions/
 
 # ─── Divers ─────────────────────────────────────────────
 .cache/
