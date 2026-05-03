@@ -4,6 +4,22 @@ Plateforme communautaire de consultation et de partage de recettes de cuisine.
 Les utilisateurs peuvent parcourir les recettes, laisser une note (1–5 étoiles), poster des commentaires et suivre d'autres membres.
 Projet académique EFREI — module **TI616 Numérique Durable** (Groupe 3).
 
+**Site déployé :** *à compléter après déploiement*
+
+**Rapport PDF :** [docs/](docs/)
+
+---
+
+## Équipe
+
+| Membre | Rôle |
+|---|---|
+| Valentin GONÇALVES | Frontend, architecture React, GitHub |
+| Batur HAMZAOGULLARI | Back-end, API Express |
+| Emma DUVERNET | Base de données, migrations SQLite |
+| Ivane DJOTEBONG TIDONG | Tests, qualité & sécurité |
+| Roline IMELE TIODA | Analyse Green IT, rapport PDF |
+
 ---
 
 ## Fonctionnalités actuelles
@@ -58,14 +74,14 @@ Projet académique EFREI — module **TI616 Numérique Durable** (Groupe 3).
 
 ## Stack technique
 
-| Couche | Technologie |
-|---|---|
-| Front-end (prototype) | React 18 via CDN + Babel Standalone (transpilation JSX in-browser) |
-| Styles | CSS vanilla avec variables custom (design system maison) |
-| Persistance | `localStorage` (`ra_state_v1`) — simulé, pas de vrai back-end |
-| Back-end (à venir) | Node.js + Express |
-| Base de données (à venir) | SQLite via `better-sqlite3` |
-| Tests (à venir) | Jest + Supertest |
+| Couche | Technologie | Justification Green IT |
+|---|---|---|
+| Front-end (prototype) | React 18 via CDN + Babel Standalone | Phase de prototype uniquement — sera remplacé par du JS natif pour la mesure finale |
+| Styles | CSS vanilla avec variables custom | Aucune dépendance externe, design system léger et réutilisable |
+| Persistance (proto) | `localStorage` (`ra_state_v1`) | Zéro requête réseau en phase prototype |
+| Back-end (à venir) | Node.js + Express | Runtime léger, faible consommation mémoire |
+| Base de données (à venir) | SQLite via `better-sqlite3` | Fichier unique, pas de serveur BDD séparé, I/O minimaux |
+| Tests (à venir) | Jest + Supertest | Dépendances de dev uniquement, non incluses en prod |
 
 ---
 
@@ -109,22 +125,36 @@ Ouvrir [http://localhost:8080](http://localhost:8080).
 
 ---
 
-## Préparer le back-end (fondation)
+## Préparer le back-end
 
-Ces commandes créent la structure Node.js + Express + SQLite prête à être développée.
-
-### 1. Initialiser le projet Node
+### 1. Cloner le projet et installer les dépendances
 
 ```bash
-# À la racine du dépôt
-npm init -y
+git clone https://github.com/valentino3112/recette-et-avis.git
+cd recette-et-avis
+npm install
 ```
 
-### 2. Installer les dépendances de production
+### 2. Configurer les variables d'environnement
 
 ```bash
-npm install express better-sqlite3 bcrypt express-session connect-sqlite3 express-validator cors dotenv
+cp .env.example .env
+# Éditer .env avec vos valeurs
 ```
+
+### 3. Initialiser la base de données
+
+```bash
+npm run db:init
+```
+
+### 4. Lancer le serveur de développement
+
+```bash
+npm run dev
+```
+
+### Dépendances de production
 
 | Paquet | Rôle |
 |---|---|
@@ -137,11 +167,7 @@ npm install express better-sqlite3 bcrypt express-session connect-sqlite3 expres
 | `cors` | En-têtes CORS pour le dev front/back séparés |
 | `dotenv` | Variables d'environnement (`.env`) |
 
-### 3. Installer les dépendances de développement
-
-```bash
-npm install --save-dev jest supertest nodemon
-```
+### Dépendances de développement
 
 | Paquet | Rôle |
 |---|---|
@@ -149,46 +175,86 @@ npm install --save-dev jest supertest nodemon
 | `supertest` | Requêtes HTTP dans les tests Jest |
 | `nodemon` | Redémarrage automatique du serveur en dev |
 
-### 4. Scripts npm (à ajouter dans `package.json`)
-
-```json
-"scripts": {
-  "start": "node backend/server.js",
-  "dev": "nodemon backend/server.js",
-  "test": "jest --runInBand"
-}
-```
-
-### 5. Lancer le serveur de développement (une fois créé)
-
-```bash
-npm run dev
-```
-
 ---
 
 ## Structure du projet
 
 ```
-PROJET_SITE_RECETTES/
+recette-et-avis/
 ├── frontend/
-│   ├── index.html          # Point d'entrée SPA
+│   ├── index.html              # Point d'entrée SPA
+│   ├── assets/img/             # Images recettes (optimisées)
 │   ├── css/
-│   │   └── styles.css      # Design system CSS
+│   │   └── styles.css          # Design system CSS (variables, composants)
 │   └── js/
-│       ├── data.js         # Seed data + helpers localStorage
-│       ├── app.jsx         # Routeur principal + état global
-│       ├── components.jsx  # Header, Footer, Stars, Pager…
-│       ├── pages-public.jsx   # Accueil, liste recettes, détail
-│       ├── pages-auth.jsx     # Connexion, inscription, profil
-│       ├── pages-user.jsx     # Profil public, follow system
-│       ├── pages-admin.jsx    # Dashboard admin
-│       └── pages-extra.jsx    # À propos, contact, mentions, 404
-├── backend/                # À créer — API Express
-├── docs/                   # Livrables PDF du projet
+│       ├── data.js             # Seed data + helpers localStorage
+│       ├── app.jsx             # Routeur principal + état global
+│       ├── components.jsx      # Header, Footer, Stars, Pager…
+│       ├── pages-public.jsx    # Accueil, liste recettes, détail
+│       ├── pages-auth.jsx      # Connexion, inscription, profil
+│       ├── pages-user.jsx      # Profil public, système de follow
+│       ├── pages-admin.jsx     # Dashboard admin
+│       └── pages-extra.jsx     # À propos, contact, mentions, 404
+├── backend/                    # API Express (à venir)
+│   ├── server.js               # Point d'entrée serveur
+│   ├── db.js                   # Connexion SQLite + init schéma
+│   └── routes/                 # Routes API (users, recettes, auth…)
+├── database/                   # Scripts SQL (à venir)
+│   └── init.sql                # Schéma + seed data
+├── docs/                       # Livrables PDF (consignes, rapports UML)
+├── .env.example                # Variables d'environnement (template)
 ├── .gitignore
+├── .gitattributes
+├── package.json
 └── README.md
 ```
+
+---
+
+## Conventions de commits
+
+Ce projet suit la convention [Conventional Commits](https://www.conventionalcommits.org/fr/) :
+
+```
+type(scope): description courte en minuscules
+```
+
+| Type | Usage |
+|---|---|
+| `feat` | Nouvelle fonctionnalité |
+| `fix` | Correction de bug |
+| `chore` | Config, dépendances, outillage |
+| `docs` | README, commentaires, rapport |
+| `style` | CSS, formatage (sans changement de logique) |
+| `refactor` | Restructuration sans changement de comportement |
+| `test` | Ajout ou correction de tests |
+
+**Exemples :**
+```
+feat(frontend): add hamburger menu for mobile navigation
+fix(frontend): remove CSS pseudo-element conflict on follow button
+feat(backend): add CRUD routes for recipes
+chore: add .env.example
+docs: update README with deployment URL
+```
+
+---
+
+## Workflow Git
+
+```
+main          ← code déployé (jamais de commit direct)
+└── develop   ← branche d'intégration
+    ├── feature/frontend-base     ✅ mergé
+    ├── feature/backend-setup     → en cours
+    ├── feature/auth              → à venir
+    ├── feature/crud-recettes     → à venir
+    ├── feature/crud-users        → à venir
+    └── feature/deploy            → à venir
+```
+
+Chaque feature part de `develop`, revient dans `develop` par Pull Request.
+`develop` → `main` uniquement pour les releases stables.
 
 ---
 
