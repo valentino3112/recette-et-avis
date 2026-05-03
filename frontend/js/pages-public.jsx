@@ -10,8 +10,12 @@ function RecipeCard({ r, state, navigate, glyph }) {
        onClick={(e) => { e.preventDefault(); navigate(`/recettes/${r.id}`); }}>
       <div className="plate">
         {r.image
-          ? <img src={r.image} alt={r.titre} className="card-img" loading="lazy" />
-          : <span className="glyph" aria-hidden="true">{initial}</span>
+          ? (
+            <picture>
+              <source srcSet={r.image.replace(/\.(png|jpg|jpeg)$/i, '.webp')} type="image/webp" />
+              <img src={r.image} alt={r.titre} className="card-img" loading="lazy" decoding="async" />
+            </picture>
+          ) : <span className="glyph" aria-hidden="true">{initial}</span>
         }
         {glyph !== false && avg && avg >= 4.5 && <span className="badge">★ Coup de cœur</span>}
         <span className="heart" aria-hidden="true">♡</span>

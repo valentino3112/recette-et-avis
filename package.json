@@ -12,7 +12,8 @@
     "dev":   "nodemon backend/server.js",
     "db:init": "node --experimental-sqlite database/seed.js",
     "db:init-if-empty": "node --experimental-sqlite database/seed.js --if-empty",
-    "test": "jest --runInBand --forceExit"
+    "test": "jest --runInBand --forceExit",
+    "convert-images": "node tools/convert-images.js"
   },
   "nodemonConfig": {
     "nodeArgs": ["--experimental-sqlite"]
@@ -29,6 +30,8 @@
   "devDependencies": {
     "jest":     "^29.7.0",
     "nodemon":  "^3.1.0",
-    "supertest":"^7.0.0"
+    "supertest":"^7.0.0",
+    "sharp": "^0.32.0"
   }
+
 }

@@ -47,7 +47,8 @@
   --maxw-narrow: 960px;
 
   /* Type */
-  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  /* Use system fonts to avoid external font downloads (better for eco-score) */
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --serif: var(--sans); /* alias kept so existing inline styles still resolve cleanly */
 
