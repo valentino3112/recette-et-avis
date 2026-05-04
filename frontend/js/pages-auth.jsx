@@ -16,11 +16,21 @@ export function Login({ state, setState, navigate }) {
     setErr(''); setLoading(true);
     try {
       const u = await api.login(email.trim(), pwd);
+      const followsData = await api.getFollowing(u.id).catch(() => []);
       setState((s) => {
         const users = s.users.some((x) => x.id === u.id)
           ? s.users.map((x) => x.id === u.id ? { ...x, ...u } : x)
           : [...s.users, u];
-        return { ...s, users, sessionUserId: u.id };
+        return {
+          ...s,
+          users,
+          sessionUserId: u.id,
+          follows: followsData.map((f) => ({
+            id: 'fl_' + f.id,
+            follower_id: u.id,
+            following_id: f.id,
+          })),
+        };
       });
       navigate(u.role === 'admin' ? '/admin' : '/profil');
     } catch (err) {
@@ -145,8 +155,8 @@ export function Profile({ state, setState, navigate, currentUser }) {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [followerCount, setFollowerCount] = useState(null);
-  const [followingCount, setFollowingCount] = useState(null);
+  const [followerCount, setFollowerCount] = useState(currentUser?.followerCount ?? null);
+  const [followingCount, setFollowingCount] = useState(currentUser?.followingCount ?? null);
 
   useEffect(() => {
     if (currentUser) {

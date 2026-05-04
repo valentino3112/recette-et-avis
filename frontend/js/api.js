@@ -46,7 +46,14 @@ export const api = {
   deleteCommentaire: (id)                => apiFetch(`/commentaires/${id}`, { method: 'DELETE' }),
 
   // ─── Utilisateurs ─────────────────────────────────────────────────────────
+  // ─── Admin ────────────────────────────────────────────────────────────────
+  getAdminStats:        ()    => apiFetch('/admin/stats'),
+  getAdminCommentaires: ()    => apiFetch('/admin/commentaires'),
+  deleteAdminCommentaire: (id) => apiFetch(`/admin/commentaires/${id}`, { method: 'DELETE' }),
+
+  // ─── Utilisateurs ─────────────────────────────────────────────────────────
   register:     (nom, email, pwd) => apiFetch('/users',        { method: 'POST', body: { nom, email, password: pwd } }),
+  getUsers:     (params)          => apiFetch('/users?' + new URLSearchParams(params || {})),
   getUser:      (id)              => apiFetch(`/users/${id}`),
   updateUser:   (id, data)        => apiFetch(`/users/${id}`,  { method: 'PUT',    body: data }),
   deleteUser:   (id)              => apiFetch(`/users/${id}`,  { method: 'DELETE' }),

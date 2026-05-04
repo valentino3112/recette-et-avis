@@ -10,6 +10,7 @@ const usersRoutes        = require('./routes/users');
 const recettesRoutes     = require('./routes/recettes');
 const commentairesRoutes = require('./routes/commentaires');
 const notesRoutes        = require('./routes/notes');
+const adminRoutes        = require('./routes/admin');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -56,6 +57,7 @@ app.use(session({
 
 // ─── Routes API ───────────────────────────────────────────────────────────────
 app.use('/api/auth',      authRoutes);
+app.use('/api/admin',     adminRoutes);
 app.use('/api/users',     usersRoutes);
 app.use('/api/recettes',  recettesRoutes);
 

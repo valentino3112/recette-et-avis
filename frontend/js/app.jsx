@@ -58,8 +58,12 @@ export default function App() {
         const meUser = meRes.status === 'fulfilled' ? meRes.value : null;
 
         let followsData = [];
+        let userDetails = null;
         if (meUser) {
-          followsData = await api.getFollowing(meUser.id).catch(() => []);
+          [followsData, userDetails] = await Promise.all([
+            api.getFollowing(meUser.id).catch(() => []),
+            api.getUser(meUser.id).catch(() => null),
+          ]);
         }
 
         setState((s) => {
@@ -67,7 +71,10 @@ export default function App() {
 
           if (meUser) {
             next.sessionUserId = meUser.id;
-            next.users  = [meUser];
+            const enrichedMe = userDetails
+              ? { ...meUser, followerCount: userDetails.followerCount ?? 0, followingCount: userDetails.followingCount ?? 0 }
+              : meUser;
+            next.users  = [enrichedMe];
             next.follows = followsData.map((f) => ({
               id:           'fl_' + f.id,
               follower_id:  meUser.id,
@@ -160,7 +167,7 @@ export default function App() {
     case 'admin':          page = <AdminDash state={state} navigate={navigate} currentUser={currentUser} />; break;
     case 'admin-recipes':  page = <AdminRecipes state={state} setState={setState} navigate={navigate} currentUser={currentUser} />; break;
     case 'admin-users':    page = <AdminUsers state={state} setState={setState} navigate={navigate} currentUser={currentUser} />; break;
-    case 'admin-comments': page = <AdminComments state={state} setState={setState} navigate={navigate} currentUser={currentUser} />; break;
+    case 'admin-comments': page = <AdminComments state={state} navigate={navigate} currentUser={currentUser} />; break;
     case 'mentions':       page = <Mentions navigate={navigate} />; break;
     case 'submit':         page = <SubmitRecipe state={state} setState={setState} navigate={navigate} currentUser={currentUser} />; break;
     case 'about':          page = <About navigate={navigate} />; break;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { api } from './api.js';
 import { getAvg, getNoteCount, shortDate, CATEGORIES, uid } from './data.js';
 import { CategoryPill, Pager } from './components.jsx';
@@ -35,15 +35,23 @@ function AdminTabs({ active, navigate }) {
 }
 
 export function AdminDash({ state, navigate, currentUser }) {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    api.getAdminStats().then(setStats).catch(() => {});
+  }, []);
+
+  const kpi = (val) => stats ? val : '…';
+
   return (
     <AdminGuard currentUser={currentUser} navigate={navigate}>
       <h1>Tableau de bord</h1>
       <AdminTabs active="dash" navigate={navigate} />
       <div className="kpi-row">
-        <div className="kpi"><div className="label">Recettes</div><div className="value">{state.recipes.length}</div></div>
-        <div className="kpi"><div className="label">Utilisateurs</div><div className="value">{state.users.length}</div></div>
-        <div className="kpi"><div className="label">Commentaires</div><div className="value">{state.comments.length}</div></div>
-        <div className="kpi"><div className="label">Notes données</div><div className="value">{state.notes.length}</div></div>
+        <div className="kpi"><div className="label">Recettes</div><div className="value">{kpi(stats?.recetteCount)}</div></div>
+        <div className="kpi"><div className="label">Utilisateurs</div><div className="value">{kpi(stats?.userCount)}</div></div>
+        <div className="kpi"><div className="label">Commentaires</div><div className="value">{kpi(stats?.commentCount)}</div></div>
+        <div className="kpi"><div className="label">Notes données</div><div className="value">{kpi(stats?.noteCount)}</div></div>
       </div>
       <div className="eco-panel">
         <h3>État Green IT</h3>
@@ -213,15 +221,21 @@ function RecipeEditor({ initial, onSave, onCancel }) {
 
 export function AdminUsers({ state, setState, navigate, currentUser }) {
   const [page, setPage] = useState(1);
+  const [allUsers, setAllUsers] = useState(null);
   const PAGE = 10;
-  const slice = state.users.slice((page - 1) * PAGE, page * PAGE);
-  const pageCount = Math.max(1, Math.ceil(state.users.length / PAGE));
+
+  useEffect(() => {
+    api.getUsers({ limit: 100 }).then((data) => setAllUsers(data.users)).catch(() => {});
+  }, []);
+
+  const users = allUsers ?? state.users;
+  const slice = users.slice((page - 1) * PAGE, page * PAGE);
+  const pageCount = Math.max(1, Math.ceil(users.length / PAGE));
 
   function toggleRole(id) {
-    setState((s) => ({
-      ...s,
-      users: s.users.map((u) => u.id === id ? { ...u, role: u.role === 'admin' ? 'user' : 'admin' } : u),
-    }));
+    const flip = (u) => u.id === id ? { ...u, role: u.role === 'admin' ? 'user' : 'admin' } : u;
+    setState((s) => ({ ...s, users: s.users.map(flip) }));
+    setAllUsers((prev) => prev ? prev.map(flip) : prev);
   }
 
   function remove(id) {
@@ -233,13 +247,14 @@ export function AdminUsers({ state, setState, navigate, currentUser }) {
       comments: s.comments.filter((c) => c.utilisateur_id !== id),
       notes:    s.notes.filter((n) => n.utilisateur_id !== id),
     }));
+    setAllUsers((prev) => prev ? prev.filter((u) => u.id !== id) : prev);
   }
 
   return (
     <AdminGuard currentUser={currentUser} navigate={navigate}>
       <h1>Gestion des utilisateurs</h1>
       <AdminTabs active="users" navigate={navigate} />
-      <div className="muted mb-2">{state.users.length} compte{state.users.length > 1 ? 's' : ''} · liste paginée (LIMIT/OFFSET côté serveur)</div>
+      <div className="muted mb-2">{users.length} compte{users.length > 1 ? 's' : ''} · liste paginée (LIMIT/OFFSET côté serveur)</div>
       <table className="data">
         <thead>
           <tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Inscrit le</th><th>Activité</th><th></th></tr>
@@ -271,34 +286,47 @@ export function AdminUsers({ state, setState, navigate, currentUser }) {
   );
 }
 
-export function AdminComments({ state, setState, navigate, currentUser }) {
+export function AdminComments({ state, navigate, currentUser }) {
   const [page, setPage] = useState(1);
+  const [allComments, setAllComments] = useState(null);
   const PAGE = 10;
-  const sorted = useMemo(() => [...state.comments].sort((a, b) => b.date_commentaire.localeCompare(a.date_commentaire)), [state.comments]);
+
+  useEffect(() => {
+    api.getAdminCommentaires().then(setAllComments).catch(() => {});
+  }, []);
+
+  const comments = allComments ?? state.comments;
+  const sorted = useMemo(() => [...comments].sort((a, b) => b.date_commentaire.localeCompare(a.date_commentaire)), [comments]);
   const slice = sorted.slice((page - 1) * PAGE, page * PAGE);
   const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE));
 
-  function remove(id) {
+  async function remove(id) {
     if (!confirm('Modérer / supprimer ce commentaire ?')) return;
-    setState((s) => ({ ...s, comments: s.comments.filter((c) => c.id !== id) }));
+    try {
+      await api.deleteAdminCommentaire(id);
+      setAllComments((prev) => prev ? prev.filter((c) => c.id !== id) : prev);
+    } catch (_) {
+      alert('Erreur lors de la suppression.');
+    }
   }
 
   return (
     <AdminGuard currentUser={currentUser} navigate={navigate}>
       <h1>Modération des commentaires</h1>
       <AdminTabs active="comments" navigate={navigate} />
-      <div className="muted mb-2">{state.comments.length} commentaire{state.comments.length > 1 ? 's' : ''}</div>
+      <div className="muted mb-2">{comments.length} commentaire{comments.length > 1 ? 's' : ''}</div>
       <table className="data">
         <thead><tr><th>Date</th><th>Auteur</th><th>Recette</th><th>Contenu</th><th></th></tr></thead>
         <tbody>
+          {allComments === null && <tr><td colSpan={5} className="muted">Chargement…</td></tr>}
           {slice.map((c) => {
             const u = state.users.find((x) => x.id === c.utilisateur_id);
             const r = state.recipes.find((x) => x.id === c.recette_id);
             return (
               <tr key={c.id}>
                 <td className="muted" style={{ whiteSpace: 'nowrap' }}>{shortDate(c.date_commentaire)}</td>
-                <td>{u ? u.nom : <em className="muted">supprimé</em>}</td>
-                <td>{r ? <a href={`#/recettes/${r.id}`} onClick={(e) => { e.preventDefault(); navigate(`/recettes/${r.id}`); }}>{r.titre}</a> : <em className="muted">supprimée</em>}</td>
+                <td>{u ? u.nom : <em className="muted">{c.utilisateur_id}</em>}</td>
+                <td>{r ? <a href={`#/recettes/${r.id}`} onClick={(e) => { e.preventDefault(); navigate(`/recettes/${r.id}`); }}>{r.titre}</a> : <em className="muted">{c.recette_id}</em>}</td>
                 <td>{c.contenu}</td>
                 <td className="actions">
                   <button className="danger small" onClick={() => remove(c.id)}>Modérer</button>
