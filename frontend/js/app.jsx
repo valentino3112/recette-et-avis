@@ -165,7 +165,7 @@ export default function App() {
   let page;
   switch (route.name) {
     case 'home':           page = <Home state={state} navigate={navigate} />; break;
-    case 'list':           page = <RecipeList state={state} navigate={navigate} route={route} />; break;
+    case 'list':           page = <RecipeList state={state} setState={setState} navigate={navigate} route={route} />; break;
     case 'detail':         page = <RecipeDetail state={state} navigate={navigate} route={route} currentUser={currentUser} />; break;
     case 'login':          page = <Login state={state} setState={setState} navigate={navigate} />; break;
     case 'register':       page = <Register state={state} setState={setState} navigate={navigate} />; break;

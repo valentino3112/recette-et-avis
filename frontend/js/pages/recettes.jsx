@@ -11,11 +11,30 @@ const SORT_OPTIONS = [
   { value: 'alphabétique',  label: 'Alphabétique' },
 ];
 
-export function RecipeList({ state, navigate, route }) {
+export function RecipeList({ state, setState, navigate, route }) {
   const [cat, setCat]   = useState(route.params.cat || 'Toutes');
   const [sort, setSort] = useState('mieux-notées');
   const [page, setPage] = useState(parseInt(route.params.page || '1', 10));
   const PAGE_SIZE = 8;
+
+  useEffect(() => {
+    api.getRecettes({ limit: 50 }).then((data) => {
+      const recettes = data.recettes || [];
+      setState((s) => ({
+        ...s,
+        recipes: recettes.map(mapApiRecette),
+        notes: recettes
+          .filter((r) => r.note_count > 0)
+          .map((r) => ({
+            id:         'agg_' + r.id,
+            recette_id: r.id,
+            _agg:       true,
+            _moyenne:   r.note_moyenne,
+            _count:     r.note_count,
+          })),
+      }));
+    }).catch(() => {});
+  }, []);
 
   const filtered = useMemo(() => {
     let list = state.recipes.filter((r) => cat === 'Toutes' ? true : r.categorie === cat);
