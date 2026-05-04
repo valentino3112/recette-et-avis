@@ -32,8 +32,9 @@ export const api = {
   // ─── Recettes ──────────────────────────────────────────────────────────────
   getRecettes:   (params) => apiFetch('/recettes?' + new URLSearchParams(params || {})),
   getRecette:    (id)     => apiFetch('/recettes/' + id),
-  createRecette: (data)   => apiFetch('/recettes',  { method: 'POST', body: data }),
-  deleteRecette: (id)     => apiFetch('/recettes/' + id, { method: 'DELETE' }),
+  createRecette: (data)   => apiFetch('/recettes',       { method: 'POST',   body: data }),
+  updateRecette: (id, data) => apiFetch('/recettes/' + id, { method: 'PUT',    body: data }),
+  deleteRecette: (id)     => apiFetch('/recettes/' + id,   { method: 'DELETE' }),
 
   // ─── Notes ────────────────────────────────────────────────────────────────
   getMaNote: (recetteId)        => apiFetch(`/recettes/${recetteId}/notes/moi`),
@@ -58,7 +59,8 @@ export const api = {
   getUsers:     (params)          => apiFetch('/users?' + new URLSearchParams(params || {})),
   getUser:      (id)              => apiFetch(`/users/${id}`),
   updateUser:   (id, data)        => apiFetch(`/users/${id}`,  { method: 'PUT',    body: data }),
-  deleteUser:   (id)              => apiFetch(`/users/${id}`,  { method: 'DELETE' }),
+  deleteUser:   (id)              => apiFetch(`/users/${id}`,        { method: 'DELETE' }),
+  patchUserRole:(id, role)        => apiFetch(`/users/${id}/role`,   { method: 'PATCH', body: { role } }),
   getFollowers: (id)              => apiFetch(`/users/${id}/followers`),
   getFollowing: (id)              => apiFetch(`/users/${id}/following`),
   follow:       (id)              => apiFetch(`/users/${id}/follow`, { method: 'POST' }),

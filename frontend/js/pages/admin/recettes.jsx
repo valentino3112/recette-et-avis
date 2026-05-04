@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api.js';
-import { getAvg, getNoteCount, CATEGORIES, uid } from '../../data.js';
+import { getAvg, getNoteCount, CATEGORIES, mapApiRecette } from '../../data.js';
 import { CategoryPill, Pager } from '../../components.jsx';
 import { AdminGuard, AdminTabs } from './shared.jsx';
 
@@ -109,17 +109,25 @@ export function AdminRecipes({ state, setState, navigate, currentUser }) {
     }
   }
 
-  function save(form) {
-    if (form._new) {
-      const r = { ...form, id: uid('r'), date: new Date().toISOString().slice(0, 10), auteur: currentUser.nom, statut: 'approuvee' };
-      delete r._new;
-      setState((s) => ({ ...s, recipes: [r, ...s.recipes] }));
-      setAllRecipes((prev) => prev ? [r, ...prev] : prev);
-    } else {
-      setState((s) => ({ ...s, recipes: s.recipes.map((r) => r.id === form.id ? form : r) }));
-      setAllRecipes((prev) => prev ? prev.map((r) => r.id === form.id ? form : r) : prev);
+  async function save(form) {
+    try {
+      if (form._new) {
+        const { _new, ...body } = form;
+        const created = await api.createRecette(body);
+        const full = await api.getRecette(created.id).catch(() => null);
+        const r = full ? mapApiRecette(full) : { ...body, id: created.id, statut: created.statut, auteur: currentUser.nom };
+        setState((s) => ({ ...s, recipes: [r, ...s.recipes] }));
+        setAllRecipes((prev) => prev ? [r, ...prev] : prev);
+      } else {
+        const updated = await api.updateRecette(form.id, form);
+        const r = { ...form, ...updated };
+        setState((s) => ({ ...s, recipes: s.recipes.map((x) => x.id === r.id ? r : x) }));
+        setAllRecipes((prev) => prev ? prev.map((x) => x.id === r.id ? r : x) : prev);
+      }
+      setEditing(null);
+    } catch (_) {
+      alert('Erreur lors de l\'enregistrement.');
     }
-    setEditing(null);
   }
 
   const pending = recipes.filter((r) => r.statut === 'en_attente').length;

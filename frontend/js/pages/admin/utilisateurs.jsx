@@ -17,22 +17,35 @@ export function AdminUsers({ state, setState, navigate, currentUser }) {
   const slice = users.slice((page - 1) * PAGE, page * PAGE);
   const pageCount = Math.max(1, Math.ceil(users.length / PAGE));
 
-  function toggleRole(id) {
-    const flip = (u) => u.id === id ? { ...u, role: u.role === 'admin' ? 'user' : 'admin' } : u;
-    setState((s) => ({ ...s, users: s.users.map(flip) }));
-    setAllUsers((prev) => prev ? prev.map(flip) : prev);
+  async function toggleRole(id) {
+    const target = (allUsers ?? state.users).find((u) => u.id === id);
+    if (!target) return;
+    const newRole = target.role === 'admin' ? 'user' : 'admin';
+    try {
+      await api.patchUserRole(id, newRole);
+      const flip = (u) => u.id === id ? { ...u, role: newRole } : u;
+      setState((s) => ({ ...s, users: s.users.map(flip) }));
+      setAllUsers((prev) => prev ? prev.map(flip) : prev);
+    } catch (_) {
+      alert('Erreur lors du changement de rôle.');
+    }
   }
 
-  function remove(id) {
+  async function remove(id) {
     if (id === currentUser.id) { alert('Impossible de supprimer le compte connecté.'); return; }
     if (!confirm('Supprimer ce compte ? Ses commentaires et notes seront aussi supprimés.')) return;
-    setState((s) => ({
-      ...s,
-      users:    s.users.filter((u) => u.id !== id),
-      comments: s.comments.filter((c) => c.utilisateur_id !== id),
-      notes:    s.notes.filter((n) => n.utilisateur_id !== id),
-    }));
-    setAllUsers((prev) => prev ? prev.filter((u) => u.id !== id) : prev);
+    try {
+      await api.deleteUser(id);
+      setState((s) => ({
+        ...s,
+        users:    s.users.filter((u) => u.id !== id),
+        comments: s.comments.filter((c) => c.utilisateur_id !== id),
+        notes:    s.notes.filter((n) => n.utilisateur_id !== id),
+      }));
+      setAllUsers((prev) => prev ? prev.filter((u) => u.id !== id) : prev);
+    } catch (_) {
+      alert('Erreur lors de la suppression.');
+    }
   }
 
   return (
