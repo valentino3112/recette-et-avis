@@ -47,9 +47,11 @@ export const api = {
 
   // ─── Utilisateurs ─────────────────────────────────────────────────────────
   // ─── Admin ────────────────────────────────────────────────────────────────
-  getAdminStats:        ()    => apiFetch('/admin/stats'),
-  getAdminCommentaires: ()    => apiFetch('/admin/commentaires'),
-  deleteAdminCommentaire: (id) => apiFetch(`/admin/commentaires/${id}`, { method: 'DELETE' }),
+  getAdminStats:          ()         => apiFetch('/admin/stats'),
+  getAdminRecettes:       ()         => apiFetch('/admin/recettes'),
+  approuverRecette:       (id, statut) => apiFetch(`/recettes/${id}/statut`, { method: 'PATCH', body: { statut } }),
+  getAdminCommentaires:   ()         => apiFetch('/admin/commentaires'),
+  deleteAdminCommentaire: (id)       => apiFetch(`/admin/commentaires/${id}`, { method: 'DELETE' }),
 
   // ─── Utilisateurs ─────────────────────────────────────────────────────────
   register:     (nom, email, pwd) => apiFetch('/users',        { method: 'POST', body: { nom, email, password: pwd } }),

@@ -75,6 +75,16 @@ router.get('/:id', (req, res) => {
   ).get(req.params.id);
 
   if (!row) return res.status(404).json({ error: 'Recette introuvable.' });
+
+  if (row.statut !== 'approuvee') {
+    const userId = req.session?.userId;
+    if (!userId) return res.status(404).json({ error: 'Recette introuvable.' });
+    const me = db.prepare('SELECT role FROM utilisateurs WHERE id = ?').get(userId);
+    if (!me || (me.role !== 'admin' && row.auteur_id !== userId)) {
+      return res.status(404).json({ error: 'Recette introuvable.' });
+    }
+  }
+
   res.json(parseRecette(row));
 });
 

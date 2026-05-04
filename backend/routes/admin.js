@@ -4,6 +4,25 @@ const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
+// ─── GET /api/admin/recettes — toutes les recettes (tous statuts) ────────────
+router.get('/recettes', requireAdmin, (req, res) => {
+  const rows = db.prepare(`
+    SELECT r.*, u.nom AS auteur_nom,
+      ROUND(AVG(n.valeur), 2) AS note_moyenne,
+      COUNT(DISTINCT n.id)    AS note_count
+    FROM recettes r
+    JOIN utilisateurs u ON u.id = r.auteur_id
+    LEFT JOIN notes n ON n.recette_id = r.id
+    GROUP BY r.id
+    ORDER BY r.date DESC
+  `).all();
+  res.json(rows.map((r) => ({
+    ...r,
+    ingredients: JSON.parse(r.ingredients),
+    etapes:      JSON.parse(r.etapes),
+  })));
+});
+
 // ─── GET /api/admin/stats ─────────────────────────────────────────────────────
 router.get('/stats', requireAdmin, (req, res) => {
   const recetteCount  = db.prepare("SELECT COUNT(*) as n FROM recettes WHERE statut = 'approuvee'").get().n;

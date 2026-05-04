@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { api } from './api.js';
 import { mapApiRecette } from './data.js';
-import { SiteHeader, SiteFooter } from './components.jsx';
-import { Home, RecipeList, RecipeDetail, NotFound, Mentions } from './pages-public.jsx';
-import { Login, Register, Profile } from './pages-auth.jsx';
-import { AdminDash, AdminRecipes, AdminUsers, AdminComments } from './pages-admin.jsx';
-import { SubmitRecipe, About, Contact } from './pages-extra.jsx';
-import { UserProfile } from './pages-user.jsx';
+import { SiteHeader, SiteFooter, NotFound } from './components.jsx';
+import { Home } from './pages/home.jsx';
+import { RecipeList, RecipeDetail } from './pages/recettes.jsx';
+import { Login, Register } from './pages/connexion.jsx';
+import { Profile } from './pages/profil.jsx';
+import { UserProfile } from './pages/utilisateur.jsx';
+import { SubmitRecipe } from './pages/proposer.jsx';
+import { About, Contact, Mentions } from './pages/extras.jsx';
+import { AdminDash } from './pages/admin/dashboard.jsx';
+import { AdminRecipes } from './pages/admin/recettes.jsx';
+import { AdminUsers } from './pages/admin/utilisateurs.jsx';
+import { AdminComments } from './pages/admin/commentaires.jsx';
 
 const ACCENT_PRESETS = {
   forest: { accent: 'oklch(0.5 0.11 150)',  accentInk: 'oklch(0.36 0.1 150)',  soft: 'oklch(0.93 0.05 150)' },

@@ -18,7 +18,8 @@
     "test":             "jest --runInBand --forceExit"
   },
   "nodemonConfig": {
-    "nodeArgs": ["--experimental-sqlite"]
+    "nodeArgs": ["--experimental-sqlite"],
+    "ignore": ["database/", "frontend/"]
   },
   "dependencies": {
     "bcryptjs":          "^2.4.3",

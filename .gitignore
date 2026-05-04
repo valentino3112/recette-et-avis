@@ -49,3 +49,6 @@ database/sessions/
 # ─── Divers ─────────────────────────────────────────────
 .cache/
 tmp/
+
+# ─── Documentation pédagogique locale ───────────────────
+EXPLICATION_PROJET.md

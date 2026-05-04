@@ -1,8 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { api } from './api.js';
-import { recipesByAuthor, userById, userByName, isFollowing, initials, shortDate, getAvg, getNoteCount } from './data.js';
-import { Stars, CategoryPill } from './components.jsx';
-import { NotFound } from './pages-public.jsx';
+import { api } from '../api.js';
+import { recipesByAuthor, userById, userByName, isFollowing, initials, shortDate, getAvg, getNoteCount } from '../data.js';
+import { Stars, CategoryPill, NotFound } from '../components.jsx';
 
 export function Avatar({ user, size }) {
   const cls = 'avatar' + (size ? ' ' + size : '');

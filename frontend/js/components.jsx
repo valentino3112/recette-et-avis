@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getAvg, getNoteCount } from './data.js';
 
 export function Stars({ value, size = 14 }) {
   const full = Math.round(value || 0);
@@ -134,6 +135,49 @@ export function SiteHeader({ route, navigate, currentUser, onLogout }) {
         </nav>
       )}
     </header>
+  );
+}
+
+export function RecipeCard({ r, state, navigate, glyph }) {
+  const avg = getAvg(state.notes, r.id);
+  const count = getNoteCount(state.notes, r.id);
+  const initial = (r.titre || '?').trim()[0];
+  return (
+    <a href={`#/recettes/${r.id}`} className="recipe-card"
+       onClick={(e) => { e.preventDefault(); navigate(`/recettes/${r.id}`); }}>
+      <div className="plate">
+        {r.image
+          ? <img src={r.image} alt={r.titre} className="card-img" loading="lazy" width="400" height="400" />
+          : <span className="glyph" aria-hidden="true">{initial}</span>
+        }
+        {glyph !== false && avg && avg >= 4.5 && <span className="badge">★ Coup de cœur</span>}
+        <span className="heart" aria-hidden="true">♡</span>
+      </div>
+      <h3>{r.titre}</h3>
+      <div className="meta">
+        <span>{r.categorie}</span>
+        <span className="sep">·</span>
+        <span>{r.temps_preparation} min</span>
+      </div>
+      <div className="meta" style={{ marginTop: 2 }}>
+        <Stars value={avg || 0} />
+        <span style={{ color: 'var(--ink)', fontWeight: 500 }}>
+          {avg ? avg.toFixed(2) : '—'}
+        </span>
+        <span className="muted">({count})</span>
+      </div>
+    </a>
+  );
+}
+
+export function NotFound({ navigate }) {
+  return (
+    <div className="center-block">
+      <div className="code">Erreur 404</div>
+      <h1>Page introuvable</h1>
+      <p className="muted">Cette page n'existe pas ou a été déplacée.</p>
+      <button className="primary mt-2" onClick={() => navigate('/')}>Retour à l'accueil</button>
+    </div>
   );
 }
 
