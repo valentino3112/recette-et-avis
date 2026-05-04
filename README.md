@@ -1,112 +1,103 @@
 # Recette & Avis
 
 Recette & Avis est une application web de partage de recettes de cuisine.  
-Elle permet de consulter des recettes, lire des avis, noter des plats et publier des commentaires.
+Elle permet de consulter des recettes, publier des avis, noter des plats et gérer un profil utilisateur.  
+Le projet a été réalisé dans une démarche d’éco-conception numérique : pages légères, images optimisées, polices système et base de données simple.
 
-Le projet a aussi été conçu avec une démarche d’éco-conception : application légère, images optimisées, polices système, base de données simple et absence de ressources externes inutiles.
+Site déployé : [https://recette-et-avis-production.up.railway.app/](https://recette-et-avis-production.up.railway.app/)
+
+## Équipe
+
+| Membre | Rôle principal |
+|---|---|
+| Valentin Gonçalves | Développement frontend et intégration |
+| Batur Hamzaogullari | Développement backend et API |
+| Emma Duvernet | Base de données et tests |
+| Ivane Djotebong Tidong | Documentation et analyse Green IT |
+| Roline Imele Tioda | Maquettes, validation fonctionnelle et rapport |
 
 ## Fonctionnalités
 
-- Consultation des recettes
-- Filtrage et affichage du détail d’une recette
+- Consultation, filtrage et détail des recettes
 - Création de compte et connexion
 - Ajout de recettes par les utilisateurs connectés
-- Ajout de commentaires et de notes
+- Notes et commentaires
 - Gestion du profil utilisateur
-- Espace administrateur pour gérer les recettes, commentaires et utilisateurs
+- Espace administrateur pour gérer recettes, commentaires et utilisateurs
 
 ## Stack technique
 
-- Frontend : React, Vite, CSS
-- Backend : Node.js, Express
-- Base de données : SQLite
-- Authentification : sessions serveur
-- Déploiement : Railway
+| Technologie | Utilisation | Justification Green IT |
+|---|---|---|
+| React + Vite | Interface web | Build rapide, fichiers minifiés, chargement optimisé |
+| CSS | Mise en forme | Pas de framework CSS lourd |
+| Node.js + Express | API backend | Serveur simple et léger |
+| SQLite | Base de données | Pas de serveur BDD séparé, stockage local léger |
+| WebP | Images | Format plus léger que PNG/JPEG |
+| Railway | Déploiement | Déploiement simple avec ressources adaptées au projet |
 
-## Structure du projet
-
-```txt
-.
-├── backend/
-│   ├── server.js
-│   ├── db.js
-│   ├── middleware/
-│   └── routes/
-├── frontend/
-│   ├── index.html
-│   ├── css/
-│   ├── js/
-│   └── public/
-├── database/
-│   ├── init.sql
-│   └── seed.js
-├── docs/
-├── package.json
-└── vite.config.js
-```
-
-## Installation
+## Installation locale
 
 ```bash
 npm install
 ```
 
-Créer ensuite un fichier `.env` à partir du fichier `.env.example`.
-
-## Initialiser la base de données
+Créer un fichier `.env` à partir de `.env.example`, puis initialiser la base :
 
 ```bash
 npm run db:init
 ```
 
-## Lancer le projet en développement
-
-Backend :
-
-```bash
-npm run dev:backend
-```
-
-Frontend :
-
-```bash
-npm run dev:frontend
-```
-
-## Build de production
-
-```bash
-npm run build
-```
-
-## Lancer en production
-
-```bash
-npm start
-```
-
-## Scripts utiles
+Lancer le projet en développement :
 
 ```bash
 npm run dev
-npm run build
-npm start
-npm test
-npm run db:init
 ```
 
-## Éco-conception
+Ou séparément :
 
-Le projet applique plusieurs principes de développement web durable :
+```bash
+npm run dev:backend
+npm run dev:frontend
+```
 
-- images au format WebP ;
-- polices système au lieu de polices externes ;
-- build minifié avec Vite ;
-- cache des fichiers statiques ;
-- base SQLite légère ;
-- limitation des dépendances ;
-- absence de CDN externe en production.
+Build et lancement en production :
 
-## Auteurs
+```bash
+npm run build
+npm start
+```
 
-Projet réalisé dans le cadre du module TI616 à l’EFREI.
+## Structure du dépôt
+
+```txt
+.
+├── backend/        # serveur Express, routes API, sessions et accès SQLite
+├── frontend/       # interface React, pages, composants, styles et assets
+├── database/       # schéma SQL et script de données initiales
+├── docs/           # documentation, rapport et annexes
+├── package.json    # dépendances et scripts npm
+└── vite.config.js  # configuration du build frontend
+```
+
+## Conventions de commit
+
+Format utilisé :
+
+```txt
+type: message court
+```
+
+Exemples :
+
+```txt
+feat: ajout de la page profil
+fix: correction de la connexion utilisateur
+docs: mise à jour du README
+style: amélioration du responsive
+refactor: simplification des appels API
+```
+
+## Rapport
+
+Rapport PDF : [docs/Rapport Recette & avis.pdf](docs/Rapport%20Recette%20%26%20avis.pdf)
