@@ -100,4 +100,4 @@ refactor: simplification des appels API
 
 ## Rapport
 
-Rapport PDF : [docs/Rapport Recette & avis.pdf](docs/Rapport%20Recette%20%26%20avis.pdf)
+Rapport PDF : [docs/Rapport Recette & avis.pdf](docs/Suivi_Projet_Recette_Avis_Groupe3.pdf)
