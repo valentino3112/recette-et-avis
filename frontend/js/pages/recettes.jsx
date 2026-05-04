@@ -71,7 +71,7 @@ export function RecipeList({ state, navigate, route }) {
   );
 }
 
-export function RecipeDetail({ state, setState, navigate, route, currentUser }) {
+export function RecipeDetail({ state, navigate, route, currentUser }) {
   const recetteId  = route.params.id;
   const fromState  = state.recipes.find((x) => x.id === recetteId) || null;
   const [r, setR]  = useState(fromState);
@@ -123,14 +123,6 @@ export function RecipeDetail({ state, setState, navigate, route, currentUser }) 
     try {
       await api.noter(recetteId, v);
       setMyNote({ valeur: v });
-      setState((s) => ({
-        ...s,
-        notes: s.notes.map((n) =>
-          n.recette_id === recetteId && n._agg
-            ? { ...n, _moyenne: n._count > 0 ? ((n._moyenne * n._count - (myNote?.valeur || 0) + v) / n._count).toFixed(2) * 1 : v, _count: myNote ? n._count : n._count + 1 }
-            : n
-        ),
-      }));
     } catch (_) {}
   }
 

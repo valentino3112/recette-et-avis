@@ -37,21 +37,22 @@ export function AdminComments({ state, navigate, currentUser }) {
         <thead><tr><th>Date</th><th>Auteur</th><th>Recette</th><th>Contenu</th><th></th></tr></thead>
         <tbody>
           {allComments === null && <tr><td colSpan={5} className="muted">Chargement…</td></tr>}
-          {slice.map((c) => {
-            const u = state.users.find((x) => x.id === c.utilisateur_id);
-            const r = state.recipes.find((x) => x.id === c.recette_id);
-            return (
-              <tr key={c.id}>
-                <td className="muted" style={{ whiteSpace: 'nowrap' }}>{shortDate(c.date_commentaire)}</td>
-                <td>{u ? u.nom : <em className="muted">{c.utilisateur_id}</em>}</td>
-                <td>{r ? <a href={`#/recettes/${r.id}`} onClick={(e) => { e.preventDefault(); navigate(`/recettes/${r.id}`); }}>{r.titre}</a> : <em className="muted">{c.recette_id}</em>}</td>
-                <td>{c.contenu}</td>
-                <td className="actions">
-                  <button className="danger small" onClick={() => remove(c.id)}>Modérer</button>
-                </td>
-              </tr>
-            );
-          })}
+          {slice.map((c) => (
+            <tr key={c.id}>
+              <td className="muted" style={{ whiteSpace: 'nowrap' }}>{shortDate(c.date_commentaire)}</td>
+              <td>{c.utilisateur_nom ?? <em className="muted">{c.utilisateur_id}</em>}</td>
+              <td>
+                {c.recette_titre
+                  ? <a href={`#/recettes/${c.recette_id}`} onClick={(e) => { e.preventDefault(); navigate(`/recettes/${c.recette_id}`); }}>{c.recette_titre}</a>
+                  : <em className="muted">{c.recette_id}</em>
+                }
+              </td>
+              <td>{c.contenu}</td>
+              <td className="actions">
+                <button className="danger small" onClick={() => remove(c.id)}>Modérer</button>
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
       <Pager page={page} pageCount={pageCount} onChange={setPage} />

@@ -35,8 +35,12 @@ router.get('/stats', requireAdmin, (req, res) => {
 // ─── GET /api/admin/commentaires ─────────────────────────────────────────────
 router.get('/commentaires', requireAdmin, (req, res) => {
   const rows = db.prepare(`
-    SELECT c.id, c.contenu, c.date_commentaire, c.recette_id, c.utilisateur_id
+    SELECT c.id, c.contenu, c.date_commentaire, c.recette_id, c.utilisateur_id,
+      u.nom   AS utilisateur_nom,
+      r.titre AS recette_titre
     FROM commentaires c
+    LEFT JOIN utilisateurs u ON u.id = c.utilisateur_id
+    LEFT JOIN recettes     r ON r.id = c.recette_id
     ORDER BY c.date_commentaire DESC
   `).all();
   res.json(rows);
