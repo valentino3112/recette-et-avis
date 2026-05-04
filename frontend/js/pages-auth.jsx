@@ -47,10 +47,6 @@ export function Login({ state, setState, navigate }) {
   return (
     <div className="auth-card">
       <h1 style={{ fontSize: 24 }}>Connexion</h1>
-      <p className="muted" style={{ fontSize: 14 }}>
-        Comptes de démo : <code>admin@recetteavis.fr</code> / <code>admin1234</code>
-        &nbsp;ou <code>camille@example.com</code> / <code>camille1234</code>
-      </p>
       <form onSubmit={submit} noValidate>
         <div className="field">
           <label htmlFor="login-email">Email</label>
