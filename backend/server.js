@@ -79,6 +79,11 @@ const staticDir = isProd ? FRONTEND_DIST : FRONTEND_DEV;
 app.use(express.static(staticDir, {
   maxAge: isProd ? '1y' : 0,
   etag:   true,
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  },
 }));
 
 // En dev : servir aussi frontend/public/ (images WebP) qui sont dans dist/ en production
