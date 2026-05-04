@@ -100,4 +100,4 @@ refactor: simplification des appels API
 
 ## Rapport
 
-Rapport PDF : [docs/Rapport Recette & avis.pdf](docs/Rapport projet Numérique Durable groupe 3.pdf)
+Rapport PDF : [docs/Rapport Recette & avis.pdf](docs/Rapport%20projet%20Num%C3%A9rique%20Durable%20groupe%203.pdf)
